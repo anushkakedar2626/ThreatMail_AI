@@ -1,0 +1,10 @@
+# Gmail OAuth secrets - never commit
+credentials.json
+token.json
+.env
+
+# Python runtime artifacts
+.venv/
+venv/
+__pycache__/
+*.py[cod]

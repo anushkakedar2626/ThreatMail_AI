@@ -1,0 +1,17 @@
+From: Account Protection <alerts@secure-appleid-confirm.com>
+To: analyst@example.com
+Reply-To: helpdesk@secure-appleid-confirm.com
+Subject: Your password reset request is pending
+Message-ID: <demo-reset-002@secure-appleid-confirm.com>
+Date: Sun, 6 Sep 2026 10:20:00 +0000
+Authentication-Results: mx.demo.example; spf=fail smtp.mailfrom=secure-appleid-confirm.com; dkim=fail; dmarc=fail
+Received: from reset.secure-appleid-confirm.com (unknown [192.0.2.20]) by mx.demo.example with ESMTP id DEMO03; Sun, 6 Sep 2026 10:19:45 +0000
+Content-Type: text/plain; charset="utf-8"
+
+Your password reset request is waiting for confirmation.
+
+Confirm the request now: https://secure-appleid-confirm.com/account/reset
+
+If you did not request this, confirm immediately to prevent account suspension.
+
+This is a synthetic phishing test email created for the ThreatMail AI demo.

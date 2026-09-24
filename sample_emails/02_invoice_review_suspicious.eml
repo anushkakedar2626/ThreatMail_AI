@@ -1,0 +1,21 @@
+From: Anushka Kedar <anushkakedar2006@gmail.com>
+To: threatmail.ai.demo@gmail.com
+Subject: Invoice Review Reminder
+Message-ID: <CAJuLC2xJvMpR3Od1H7ERNUN8MOdwALG31VBkjfP2HWNb-AKTRQ@mail.gmail.com>
+Date: Tue, 22 Sep 2026 00:22:19 +0530
+Authentication-Results: mx.demo.example; spf=pass; dkim=pass; dmarc=pass
+Received: from mail.gmail.com (unknown [209.85.220.41]) by mx.demo.example with ESMTP id DEMO-INVOICE-01; Tue, 22 Sep 2026 00:22:10 +0530
+Content-Type: text/plain; charset="utf-8"
+
+Dear Employee,
+
+Our records indicate that an invoice is awaiting your immediate review.
+
+Please open the following link to review the invoice and confirm the payment details:
+
+http://login-verify-update.net/invoice
+
+This action is required as soon as possible to avoid processing delays.
+
+Regards,
+Accounts Payable Department

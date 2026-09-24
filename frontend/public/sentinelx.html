@@ -1,0 +1,3339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ThreatMail AI — AI Email Forensic Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" />
+<script src="https://unpkg.com/cytoscape@3.30.3/dist/cytoscape.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<style>
+  :root {
+    --bg: #070b14;
+    --bg-elevated: #0c1322;
+    --sidebar: #080d18;
+    --panel: #0f1728;
+    --panel-hover: #162034;
+    --border: #1d2842;
+    --border-strong: #2b3a5c;
+    --text: #e9eef7;
+    --muted: #8695ae;
+    --accent: #3fb0d8;
+    --accent-hover: #57c3e8;
+    --accent-soft: rgba(63, 176, 216, 0.12);
+    --critical: #e05c62;
+    --high: #e08c3c;
+    --suspicious: #d8b23c;
+    --low: #3fb680;
+    --pass: #3fb680;
+    --fail: #e05c62;
+    --warn: #d8b23c;
+    --neutral: #6b7a94;
+    --shadow: 0 18px 40px -22px rgba(0, 0, 0, 0.9);
+    --shadow-soft: 0 1px 0 rgba(255, 255, 255, 0.03) inset;
+    --radius: 14px;
+    --sidebar-w: 250px;
+    --header-h: 66px;
+    --font-ui: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --font-display: "Space Grotesk", "IBM Plex Sans", system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: var(--font-ui);
+    background:
+      radial-gradient(1100px 620px at 78% -12%, rgba(63, 176, 216, 0.10), transparent 62%),
+      radial-gradient(900px 520px at 4% 8%, rgba(94, 122, 255, 0.07), transparent 60%),
+      var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #1c2740; border-radius: 99px; border: 3px solid transparent; background-clip: content-box; }
+  ::-webkit-scrollbar-thumb:hover { background: #2b3a5c; background-clip: content-box; }
+  ::selection { background: rgba(63, 176, 216, 0.3); }
+
+  .app { display: flex; min-height: 100%; }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar {
+    width: var(--sidebar-w);
+    background: linear-gradient(180deg, #0a1120 0%, #070b14 100%);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    flex-shrink: 0;
+    z-index: 30;
+  }
+  .brand {
+    padding: 20px 20px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .brand-mark { display: flex; align-items: center; gap: 12px; }
+  .brand-icon {
+    width: 38px; height: 38px;
+    border: 1px solid rgba(63, 176, 216, 0.35);
+    border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(160deg, rgba(63, 176, 216, 0.22), rgba(15, 23, 40, 0.9));
+    color: var(--accent);
+    box-shadow: 0 0 22px -6px rgba(63, 176, 216, 0.55);
+  }
+  .brand-icon svg { width: 20px; height: 20px; }
+  .brand h1 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 2px;
+  }
+  .brand p {
+    margin: 5px 0 0;
+    color: var(--muted);
+    font-size: 9.5px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  nav { padding: 14px 12px; flex: 1; display: flex; flex-direction: column; gap: 2px; }
+  .nav-item {
+    position: relative;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 10px 12px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--muted);
+    border-radius: 10px;
+    cursor: pointer;
+    font: inherit;
+    font-size: 13.5px;
+    font-weight: 550;
+    text-align: left;
+    transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+  }
+  .nav-item svg { width: 17px; height: 17px; flex-shrink: 0; opacity: 0.8; transition: opacity 0.18s ease; }
+  .nav-item:hover { background: var(--panel); color: var(--text); }
+  .nav-item:hover svg { opacity: 1; }
+  .nav-item.active {
+    background: linear-gradient(90deg, rgba(63, 176, 216, 0.18), rgba(63, 176, 216, 0.04));
+    color: var(--text);
+    border-color: rgba(63, 176, 216, 0.3);
+  }
+  .nav-item.active svg { opacity: 1; color: var(--accent); }
+  .nav-item.active::before {
+    content: "";
+    position: absolute;
+    left: -12px; top: 50%;
+    transform: translateY(-50%);
+    width: 3px; height: 22px;
+    border-radius: 0 3px 3px 0;
+    background: var(--accent);
+    box-shadow: 0 0 12px rgba(63, 176, 216, 0.8);
+  }
+  .sidebar-foot {
+    padding: 14px 20px 18px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 10.5px;
+    letter-spacing: 0.3px;
+  }
+
+  /* ---------- Main column ---------- */
+  .main-col { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+  header.app-header {
+    min-height: var(--header-h);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 0 26px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(9, 14, 26, 0.82);
+    backdrop-filter: blur(14px);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+  .tagline {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 2.4px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: rgba(15, 23, 40, 0.6);
+    white-space: nowrap;
+  }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .status-pill, .case-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    font-size: 11px;
+    font-weight: 650;
+    letter-spacing: 0.5px;
+  }
+  .status-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--low);
+    box-shadow: 0 0 0 0 rgba(63, 182, 128, 0.6);
+    animation: infraPulse 2.6s infinite;
+  }
+  .case-chip { display: none; color: var(--muted); font-family: var(--font-mono); font-size: 10.5px; }
+  .case-chip.visible { display: inline-flex; }
+  .case-chip .cls {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-weight: 700;
+  }
+
+  .workspace { padding: 26px 26px 56px; max-width: 1420px; width: 100%; }
+
+  .view { display: none; }
+  .view.active { display: block; animation: viewIn 0.32s ease both; }
+  @keyframes viewIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  .page-title {
+    margin: 0 0 6px;
+    font-family: var(--font-display);
+    font-size: 25px;
+    font-weight: 650;
+    letter-spacing: -0.3px;
+  }
+  .page-sub { margin: 0 0 22px; color: var(--muted); font-size: 13.5px; max-width: 74ch; }
+
+  /* ---------- Pipeline ribbon ---------- */
+  .pipeline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 22px;
+  }
+  .pipeline-step {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(20, 30, 51, 0.9), rgba(11, 17, 30, 0.9));
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 1.4px;
+    font-weight: 700;
+    color: var(--muted);
+  }
+  .pipeline-step span.n {
+    color: var(--accent);
+    font-size: 10px;
+    opacity: 0.9;
+  }
+  .pipeline-step.on { color: var(--text); border-color: rgba(63, 176, 216, 0.35); background: linear-gradient(180deg, rgba(63, 176, 216, 0.16), rgba(11, 17, 30, 0.9)); }
+  .pipeline-arrow { color: var(--border-strong); font-size: 13px; }
+
+  /* ---------- KPI ---------- */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .kpi {
+    position: relative;
+    background: linear-gradient(180deg, rgba(19, 28, 47, 0.95), rgba(12, 18, 32, 0.95));
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    overflow: hidden;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+  .kpi::after {
+    content: "";
+    position: absolute; left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--accent);
+    opacity: 0.75;
+  }
+  .kpi:hover { transform: translateY(-2px); border-color: var(--border-strong); }
+  .kpi.threats::after { background: var(--suspicious); }
+  .kpi.high::after { background: var(--high); }
+  .kpi.critical::after { background: var(--critical); }
+  .kpi-label {
+    color: var(--muted);
+    font-size: 10.5px;
+    letter-spacing: 1.1px;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  .kpi-value {
+    font-family: var(--font-display);
+    font-size: 34px;
+    font-weight: 700;
+    margin-top: 8px;
+    letter-spacing: -1px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .kpi-hint { color: var(--muted); font-size: 11.5px; margin-top: 6px; }
+  .kpi.threats .kpi-value { color: var(--suspicious); }
+  .kpi.high .kpi-value { color: var(--high); }
+  .kpi.critical .kpi-value { color: var(--critical); }
+
+  /* ---------- Card ---------- */
+  .card {
+    background: linear-gradient(180deg, rgba(17, 25, 42, 0.96), rgba(11, 17, 30, 0.96));
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 22px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+    transition: border-color 0.2s ease;
+  }
+  .card:hover { border-color: #24314f; }
+  .card h2 {
+    margin: 0 0 16px;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .card h2::before {
+    content: "";
+    width: 6px; height: 6px;
+    border-radius: 2px;
+    background: var(--accent);
+    box-shadow: 0 0 10px rgba(63, 176, 216, 0.8);
+    flex-shrink: 0;
+  }
+
+  /* ---------- Upload ---------- */
+  .dropzone {
+    position: relative;
+    border: 1.5px dashed var(--border-strong);
+    border-radius: var(--radius);
+    padding: 42px 24px;
+    text-align: center;
+    background:
+      radial-gradient(600px 200px at 50% 0%, rgba(63, 176, 216, 0.08), transparent 70%),
+      var(--bg-elevated);
+    transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+  }
+  .dropzone:hover { border-color: rgba(63, 176, 216, 0.5); }
+  .dropzone.dragover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    transform: scale(1.005);
+  }
+  .dropzone svg { opacity: 0.85; }
+  .dropzone h3 { margin: 12px 0 4px; font-family: var(--font-display); font-size: 17px; font-weight: 600; }
+  .dropzone p { margin: 0; color: var(--muted); font-size: 13px; }
+  .dropzone input { display: none; }
+  .link-btn {
+    background: none; border: 0; color: var(--accent); cursor: pointer;
+    font: inherit; font-weight: 650; padding: 0; text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .link-btn:hover { color: var(--accent-hover); }
+  .file-meta {
+    margin-top: 14px; color: var(--muted); font-size: 12.5px; min-height: 1.3em;
+    font-family: var(--font-mono);
+  }
+  .analyze-row { margin-top: 18px; display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
+
+  .btn {
+    border: 1px solid transparent;
+    border-radius: 10px;
+    padding: 11px 20px;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.9px;
+    cursor: pointer;
+    transition: background 0.16s ease, border-color 0.16s ease, opacity 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+  }
+  .btn:active:not(:disabled) { transform: translateY(1px); }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn-primary {
+    background: linear-gradient(180deg, var(--accent-hover), var(--accent));
+    color: #05202b;
+    box-shadow: 0 10px 24px -14px rgba(63, 176, 216, 0.95);
+  }
+  .btn-primary:hover:not(:disabled) { filter: brightness(1.07); }
+  .btn-danger { background: rgba(224, 92, 98, 0.14); color: #f0b3b6; border-color: rgba(224, 92, 98, 0.4); }
+  .btn-danger:hover { background: rgba(224, 92, 98, 0.24); }
+  .btn-safe { background: rgba(63, 182, 128, 0.14); color: #b3e6cd; border-color: rgba(63, 182, 128, 0.4); }
+  .btn-safe:hover { background: rgba(63, 182, 128, 0.24); }
+  .btn-ghost { background: transparent; color: var(--text); border-color: var(--border-strong); }
+  .btn-ghost:hover { background: var(--panel-hover); }
+  .btn-accent { background: var(--accent-soft); color: var(--text); border-color: rgba(63, 176, 216, 0.4); }
+  .btn-accent:hover { background: rgba(63, 176, 216, 0.22); }
+
+  #loading, #error { margin-top: 14px; font-size: 13px; display: none; }
+  #loading {
+    color: var(--text);
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(63, 176, 216, 0.3);
+    background: linear-gradient(90deg, rgba(63, 176, 216, 0.06), rgba(63, 176, 216, 0.16), rgba(63, 176, 216, 0.06));
+    background-size: 220% 100%;
+    animation: scanSweep 1.6s linear infinite;
+  }
+  @keyframes scanSweep {
+    from { background-position: 130% 0; }
+    to { background-position: -30% 0; }
+  }
+  #error {
+    color: #f3b8bb;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(224, 92, 98, 0.4);
+    background: rgba(224, 92, 98, 0.1);
+  }
+
+  /* ---------- Threat summary ---------- */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: 230px 1fr;
+    gap: 26px;
+    align-items: center;
+  }
+  .score-ring-wrap { text-align: center; }
+  .score-ring { width: 148px; height: 148px; margin: 0 auto; position: relative; }
+  .score-ring::after {
+    content: "";
+    position: absolute; inset: 16px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(63, 176, 216, 0.12), transparent 70%);
+  }
+  .score-ring svg { transform: rotate(-90deg); position: relative; z-index: 1; }
+  #scoreArc { transition: stroke-dashoffset 0.9s cubic-bezier(0.22, 1, 0.36, 1), stroke 0.4s ease; }
+  .score-center {
+    position: absolute; inset: 0; z-index: 2;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .score-num {
+    font-family: var(--font-display);
+    font-size: 42px; font-weight: 700; letter-spacing: -2px; line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .score-den { font-size: 11px; color: var(--muted); margin-top: 5px; font-family: var(--font-mono); }
+  .cls-badge {
+    display: inline-block;
+    margin-top: 14px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1.4px;
+  }
+  .CRITICAL { color: var(--critical); border: 1px solid rgba(224,92,98,.45); background: rgba(224,92,98,.12); }
+  .HIGH { color: var(--high); border: 1px solid rgba(224,140,60,.45); background: rgba(224,140,60,.12); }
+  .SUSPICIOUS { color: var(--suspicious); border: 1px solid rgba(216,178,60,.45); background: rgba(216,178,60,.12); }
+  .LOW { color: var(--low); border: 1px solid rgba(63,182,128,.45); background: rgba(63,182,128,.12); }
+  .meta-kv {
+    display: grid; grid-template-columns: 118px 1fr; gap: 10px 16px; font-size: 13.5px;
+    align-content: center;
+  }
+  .meta-kv .k {
+    color: var(--muted);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.9px;
+    font-weight: 700;
+    padding-top: 2px;
+  }
+  .meta-kv > div:not(.k) { word-break: break-word; }
+
+  /* ---------- Reasons ---------- */
+  .reason-list { list-style: none; margin: 0; padding: 0; }
+  .reason-list li {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13.5px;
+  }
+  .reason-list li:last-child { border-bottom: 0; padding-bottom: 0; }
+  .sev {
+    flex-shrink: 0;
+    font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    padding: 3px 8px;
+    border-radius: 5px;
+    margin-top: 1px;
+    text-transform: uppercase;
+  }
+  .sev-high { color: var(--high); background: rgba(224,140,60,.12); border: 1px solid rgba(224,140,60,.35); }
+  .sev-med { color: var(--suspicious); background: rgba(216,178,60,.12); border: 1px solid rgba(216,178,60,.35); }
+  .sev-info { color: var(--neutral); background: rgba(107,122,148,.12); border: 1px solid var(--border); }
+
+  /* ---------- Auth ---------- */
+  .auth-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .auth-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 16px;
+    background: var(--bg-elevated);
+    text-align: center;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+  .auth-card:hover { transform: translateY(-2px); }
+  .auth-card .mech { color: var(--muted); font-size: 10.5px; letter-spacing: 1.6px; font-weight: 800; }
+  .auth-card .val {
+    margin-top: 10px;
+    font-family: var(--font-display);
+    font-size: 19px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+  .auth-pass { border-color: rgba(63,182,128,.3); }
+  .auth-fail { border-color: rgba(224,92,98,.35); }
+  .auth-warn { border-color: rgba(216,178,60,.3); }
+  .auth-pass .val { color: var(--pass); }
+  .auth-fail .val { color: var(--fail); }
+  .auth-warn .val { color: var(--warn); }
+  .auth-na .val { color: var(--neutral); }
+.auth-note {
+  margin-top: 7px;
+  font-size: 10px;
+  line-height: 1.3;
+  color: #94a3b8;
+  text-align: center;
+}
+  /* ---------- Breakdown ---------- */
+  .bar-row { display: grid; grid-template-columns: 180px 1fr 44px; gap: 12px; align-items: center; margin-bottom: 13px; }
+  .bar-row:last-child { margin-bottom: 0; }
+  .bar-label { color: var(--muted); font-size: 12px; }
+  .bar-track { height: 9px; background: #16203a; border-radius: 99px; overflow: hidden; border: 1px solid var(--border); }
+  .bar-fill {
+    height: 100%; border-radius: 99px; width: 0;
+    transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow: 0 0 12px -2px currentColor;
+  }
+  .bar-val { font-size: 12px; font-weight: 700; text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  .workspace-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(400px, 0.95fr);
+    gap: 16px;
+    align-items: start;
+  }
+  .workspace-stack { display: grid; gap: 16px; align-content: start; }
+  /* Keep the infrastructure investigation card wide enough for the map. */
+  .workspace-shell > .workspace-stack:last-child { display: contents; }
+  .workspace-shell > .workspace-stack:last-child > .card:nth-child(4) { grid-column: 1 / -1; }
+
+  .mini-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .mini-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-elevated);
+    padding: 14px 15px;
+    transition: border-color 0.18s ease;
+  }
+  .mini-card:hover { border-color: var(--border-strong); }
+  .mini-card .label {
+    color: var(--muted);
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 1.1px;
+    font-weight: 800;
+  }
+  .mini-card .value { margin-top: 7px; font-size: 13.5px; font-weight: 600; word-break: break-word; }
+
+  .workspace-note { margin: 0 0 12px; color: var(--muted); font-size: 12px; line-height: 1.55; }
+
+  /* ---------- Graph ---------- */
+  .graph-wrap { display: grid; gap: 12px; }
+  #graphCanvas {
+    height: 380px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background:
+      radial-gradient(circle at 50% 0%, rgba(63, 176, 216, 0.14), rgba(8, 13, 24, 0.96) 70%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.018) 0 1px, transparent 1px 34px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.018) 0 1px, transparent 1px 34px);
+    overflow: hidden;
+  }
+  .graph-fallback { display: grid; gap: 10px; color: var(--muted); font-size: 12px; }
+  .graph-edge-list { display: grid; gap: 8px; }
+  .graph-edge-item {
+    padding: 11px 13px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg-elevated);
+    font-size: 12.5px;
+  }
+  .graph-edge-item strong { color: var(--text); }
+
+  /* ---------- Infrastructure ---------- */
+  .infrastructure-panel { display: grid; gap: 16px; }
+  .infrastructure-hero { display: grid; gap: 6px; }
+  .infrastructure-hero h2, .infrastructure-hero h3 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 20px;
+    letter-spacing: -0.2px;
+    color: var(--text);
+    text-transform: none;
+  }
+  .infrastructure-hero h2::before { display: none; }
+  .infrastructure-hero p { margin: 0; color: var(--muted); font-size: 13px; }
+
+  .infrastructure-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(310px, 0.9fr);
+    gap: 14px;
+    align-items: stretch;
+  }
+  .infrastructure-map-card,
+  .infrastructure-summary-card {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(18, 27, 46, 0.96), rgba(9, 14, 26, 0.99));
+    overflow: hidden;
+  }
+  .infrastructure-map-wrap { position: relative; min-height: 380px; }
+  #infraMap {
+    height: 380px;
+    width: 100%;
+    background: radial-gradient(circle at center, rgba(63, 176, 216, 0.12), rgba(8, 13, 24, 0.98));
+  }
+  #infraMap .leaflet-tile-pane { filter: brightness(0.6) contrast(1.16) saturate(0.62) grayscale(0.28); }
+  #infraMap .leaflet-container { background: #070b14; }
+  #infraMap .leaflet-control-attribution {
+    background: rgba(8, 13, 24, 0.75);
+    color: var(--muted);
+    font-size: 10px;
+  }
+  #infraMap .leaflet-control-attribution a { color: var(--accent); }
+  #infraMap .leaflet-bar a {
+    background: rgba(15, 23, 40, 0.95);
+    color: var(--text);
+    border-color: var(--border);
+  }
+  #infraMap .leaflet-bar a:hover { background: var(--panel-hover); }
+  #infraMap .leaflet-popup-content-wrapper,
+  #infraMap .leaflet-popup-tip {
+    background: rgba(9, 14, 26, 0.96);
+    color: var(--text);
+    border: 1px solid rgba(63, 176, 216, 0.3);
+    box-shadow: var(--shadow);
+  }
+  #infraMap .leaflet-popup-content { margin: 11px 13px; font-size: 12px; line-height: 1.55; }
+
+  .infra-marker-wrap {
+    position: relative; width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .infra-marker-ring {
+    position: absolute;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    border: 2px solid rgba(63, 176, 216, 0.7);
+    box-shadow: 0 0 0 0 rgba(63, 176, 216, 0.45);
+    animation: infraMarkerPulse 2.4s ease-out infinite;
+  }
+  .infra-marker-pin {
+    position: relative;
+    width: 16px; height: 16px;
+    transform: rotate(45deg);
+    border-radius: 50% 50% 50% 0;
+    background: linear-gradient(135deg, #e08c3c 0%, #3fb0d8 100%);
+    border: 2px solid #e9eef7;
+    box-shadow: 0 0 18px rgba(63, 176, 216, 0.4), 0 0 0 3px rgba(63, 176, 216, 0.12);
+  }
+  .infra-marker-pin::after {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border-radius: 50%;
+    background: rgba(8, 13, 24, 0.9);
+  }
+  @keyframes infraMarkerPulse {
+    0% { transform: scale(0.8); opacity: 0.7; }
+    70% { transform: scale(1.5); opacity: 0.1; }
+    100% { transform: scale(1.65); opacity: 0; }
+  }
+
+  .infra-map-overlay {
+    position: absolute;
+    inset: 14px 14px auto auto;
+    z-index: 400;
+    max-width: 280px;
+    display: grid;
+    gap: 8px;
+    padding: 14px 15px;
+    border-radius: 14px;
+    border: 1px solid rgba(63, 176, 216, 0.32);
+    background: rgba(8, 13, 24, 0.86);
+    backdrop-filter: blur(10px);
+    box-shadow: var(--shadow);
+  }
+  .infra-map-overlay .eyebrow {
+    color: var(--muted);
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 1.3px;
+    font-weight: 800;
+  }
+  .infra-map-overlay .headline { font-family: var(--font-display); font-size: 18px; font-weight: 700; line-height: 1.2; }
+  .infra-map-overlay .subline { color: #c3ccdb; font-size: 11.5px; line-height: 1.5; }
+  .infra-map-overlay .pulse {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--high);
+    box-shadow: 0 0 0 0 rgba(224, 140, 60, 0.45);
+    animation: infraPulse 2.4s infinite;
+    flex-shrink: 0;
+  }
+  .infra-map-overlay .pulse-row {
+    display: flex; align-items: center; gap: 8px;
+    color: var(--text); font-size: 12px; font-weight: 650;
+  }
+  .infra-map-note-fallback { color: #d6deea; }
+  @keyframes infraPulse {
+    0% { box-shadow: 0 0 0 0 rgba(224, 140, 60, 0.45); }
+    70% { box-shadow: 0 0 0 13px rgba(224, 140, 60, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(224, 140, 60, 0); }
+  }
+
+  .infra-meta-strip { display: grid; gap: 6px; padding: 16px 18px 0; }
+  .infra-meta-strip .observed-in { font-family: var(--font-display); font-size: 19px; font-weight: 700; color: var(--text); }
+  .infra-meta-strip .observed-context { color: var(--muted); font-size: 12.5px; }
+  .infra-hint {
+    color: var(--muted);
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    font-weight: 800;
+  }
+  .infra-technical-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    padding: 16px 18px 16px;
+  }
+  .infra-technical-item {
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    background: rgba(8, 13, 24, 0.6);
+    padding: 12px 13px;
+  }
+  .infra-technical-item .label {
+    color: var(--muted);
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 1.1px;
+    font-weight: 800;
+    margin-bottom: 6px;
+  }
+  .infra-technical-item .value { color: var(--text); font-size: 13px; font-weight: 650; word-break: break-word; }
+  .infra-explanation {
+    margin: 0 18px 16px;
+    padding: 13px 14px;
+    border-left: 3px solid var(--accent);
+    border-radius: 10px;
+    background: rgba(63, 176, 216, 0.08);
+    color: #d6deea;
+    font-size: 12.5px;
+    line-height: 1.6;
+  }
+  .infra-disclaimer { margin: 0 18px 18px; color: var(--muted); font-size: 12px; line-height: 1.55; }
+
+  /* ---------- Timeline ---------- */
+  .timeline-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+  .timeline-item {
+    position: relative;
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 14px;
+    align-items: start;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .timeline-item:last-child { border-bottom: 0; padding-bottom: 0; }
+  .timeline-item::after {
+    content: "";
+    position: absolute;
+    left: 23px; top: 60px; bottom: -1px;
+    width: 1px;
+    background: linear-gradient(180deg, var(--border-strong), transparent);
+  }
+  .timeline-item:last-child::after { display: none; }
+  .timeline-step {
+    width: 46px; height: 46px;
+    border-radius: 13px;
+    border: 1px solid var(--border-strong);
+    background: linear-gradient(180deg, rgba(63, 176, 216, 0.18), rgba(15, 23, 40, 0.95));
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--text);
+    z-index: 1;
+  }
+  .timeline-title { margin: 0; font-size: 13.5px; font-weight: 700; }
+  .timeline-desc { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
+
+  /* ---------- Reports ---------- */
+  .report-shell { display: grid; gap: 16px; }
+  .report-page {
+    background: linear-gradient(180deg, rgba(15, 23, 40, 0.96), rgba(8, 13, 24, 0.98));
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .report-hero {
+    padding: 26px 24px 22px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(135deg, rgba(63, 176, 216, 0.18), rgba(8, 13, 24, 0.96));
+  }
+  .report-hero h2 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 24px;
+    letter-spacing: -0.2px;
+    color: var(--text);
+    text-transform: none;
+  }
+  .report-hero h2::before { display: none; }
+  .report-hero p { margin: 8px 0 0; color: var(--muted); }
+  .report-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    padding: 20px 20px 24px;
+  }
+  .report-section {
+    border: 1px solid var(--border);
+    border-radius: 13px;
+    background: var(--panel);
+    padding: 18px;
+  }
+  .report-section h3 {
+    margin: 0 0 14px;
+    font-size: 10.5px;
+    letter-spacing: 1.3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 800;
+  }
+  .report-grid .span-2 { grid-column: span 2; }
+  .report-action-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .report-meta { display: grid; grid-template-columns: 165px 1fr; gap: 9px 14px; font-size: 13px; }
+  .report-meta .k { color: var(--muted); font-size: 12px; }
+  .report-subtle { color: var(--muted); font-size: 12px; margin: 0; line-height: 1.6; }
+
+  .evidence-chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .evidence-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--bg-elevated);
+    color: var(--text);
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+
+  .print-only { display: none; }
+
+  /* ---------- Quarantine / release workflow ---------- */
+  .disposition-pill { display:inline-flex; align-items:center; gap:7px; padding:5px 10px; border-radius:999px; font-size:11px; font-weight:700; letter-spacing:.06em; border:1px solid var(--border); }
+  .disposition-pill.pending { color:var(--muted); }
+  .disposition-pill.quarantined { color:var(--critical); border-color:rgba(224,92,98,.35); background:rgba(224,92,98,.08); }
+  .disposition-pill.released { color:var(--low); border-color:rgba(63,182,128,.35); background:rgba(63,182,128,.08); }
+  .protected-email { border:1px dashed var(--border-strong); border-radius:12px; padding:18px; background:rgba(7,11,20,.35); }
+  .protected-email h3 { margin:0 0 6px; }
+  .protected-email p { margin:0 0 12px; color:var(--muted); }
+  .release-confirm-note { margin-top:8px; color:var(--muted); font-size:12px; }
+  .modal-backdrop { position:fixed; inset:0; z-index:100; display:none; align-items:center; justify-content:center; padding:20px; background:rgba(0,0,0,.72); backdrop-filter:blur(5px); }
+  .modal-backdrop.show { display:flex; }
+  .modal { width:min(520px,100%); background:var(--panel); border:1px solid var(--border-strong); border-radius:16px; box-shadow:0 30px 80px rgba(0,0,0,.55); padding:24px; }
+  .modal h2 { margin:0 0 8px; }
+  .modal p { color:var(--muted); margin:0; }
+  .modal-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:20px; }
+
+  @media print {
+    body { background: #fff; color: #111; }
+    .sidebar, .app-header, .no-print { display: none !important; }
+    .workspace { max-width: none; padding: 0; }
+    .view { display: none !important; }
+    .view.active.printable-report { display: block !important; }
+    .print-only { display: block !important; }
+    .report-page { border: 0; border-radius: 0; background: #fff; color: #111; }
+    .report-hero, .report-section, .mini-card, .card { background: #fff !important; color: #111 !important; border-color: #d7dbe3 !important; box-shadow: none !important; }
+    .report-hero p, .report-subtle, .workspace-note, .timeline-desc, .workspace .page-sub, .workspace .disclaimer { color: #444 !important; }
+    .btn, .no-print { display: none !important; }
+    #graphCanvas { background: #fff !important; }
+  }
+
+  /* ---------- Key/value ---------- */
+  .kv { display: grid; grid-template-columns: 175px 1fr; gap: 9px 14px; font-size: 13.5px; }
+  .kv .k { color: var(--muted); font-size: 12px; }
+  .kv .v { word-break: break-word; }
+
+  .disclaimer {
+    margin: 14px 0 0;
+    padding: 12px 14px;
+    background: var(--bg-elevated);
+    border-left: 3px solid var(--border-strong);
+    border-radius: 10px;
+    color: var(--muted);
+    font-size: 12.5px;
+  }
+
+  .badge-mock, .badge-real {
+  display: inline-block;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  margin-left: 7px;
+  vertical-align: middle;
+}
+
+.badge-mock {
+  background: rgba(216, 178, 60, 0.16);
+  color: #f0c95c;
+  border: 1px solid rgba(216, 178, 60, 0.45);
+  box-shadow: 0 0 8px rgba(216, 178, 60, 0.08);
+}
+
+.badge-real {
+  background: rgba(63, 182, 128, 0.16);
+  color: #7fd9ab;
+  border: 1px solid rgba(63, 182, 128, 0.45);
+  box-shadow: 0 0 8px rgba(63, 182, 128, 0.08);
+}
+  #previewBody {
+    white-space: pre-wrap;
+    color: #c3ccdb;
+    font-size: 12.5px;
+    margin: 12px 0 0;
+    background: var(--bg-elevated);
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    max-height: 320px;
+    overflow: auto;
+    font-family: var(--font-mono);
+    line-height: 1.65;
+  }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 24px;
+    color: var(--muted);
+    border: 1.5px dashed var(--border);
+    border-radius: var(--radius);
+    background: radial-gradient(500px 180px at 50% 0%, rgba(63, 176, 216, 0.06), transparent 70%), var(--bg-elevated);
+  }
+  .empty-state h3 { color: var(--text); margin: 0 0 8px; font-family: var(--font-display); font-size: 17px; }
+
+  .folder-list { display: flex; flex-direction: column; gap: 10px; }
+  .folder-item {
+    width: 100%;
+    text-align: left;
+    background: linear-gradient(180deg, rgba(17, 25, 42, 0.96), rgba(11, 17, 30, 0.96));
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 14px;
+    align-items: center;
+    transition: border-color 0.16s ease, background 0.16s ease, transform 0.16s ease;
+  }
+  .folder-item:hover { background: var(--panel-hover); border-color: var(--border-strong); transform: translateX(3px); }
+  .folder-item .sub { font-weight: 650; }
+  .folder-item .id { color: var(--muted); font-size: 11.5px; margin-top: 3px; font-family: var(--font-mono); }
+  .disp-tag {
+    font-size: 9.5px;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 3px 8px;
+    border-radius: 999px;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+
+  .overview-last { margin-top: 4px; }
+
+  .toast {
+    position: fixed;
+    bottom: 26px;
+    right: 26px;
+    background: rgba(15, 23, 40, 0.97);
+    border: 1px solid var(--border-strong);
+    box-shadow: var(--shadow);
+    padding: 14px 18px;
+    border-radius: 12px;
+    max-width: 380px;
+    font-size: 13px;
+    z-index: 60;
+    display: none;
+    backdrop-filter: blur(8px);
+  }
+  .toast.show { display: block; animation: toastIn 0.28s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: none; }
+  }
+  .toast strong { display: block; margin-bottom: 4px; font-size: 12px; letter-spacing: 0.6px; }
+
+  .settings-list { margin: 0; padding-left: 18px; color: #c3ccdb; }
+  .settings-list li { margin-bottom: 10px; }
+
+  @media (max-width: 1240px) {
+    .workspace-shell { grid-template-columns: 1fr; }
+    .workspace-shell > .workspace-stack:last-child { display: grid; }
+  }
+
+  @media (max-width: 1100px) {
+    .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    .summary-grid, .two-col, .auth-row { grid-template-columns: 1fr; }
+    .report-grid { grid-template-columns: 1fr; }
+    .report-grid .span-2 { grid-column: auto; }
+    .infrastructure-shell { grid-template-columns: 1fr; }
+    .infra-technical-grid { grid-template-columns: 1fr; }
+    .kv, .report-meta, .meta-kv { grid-template-columns: 130px 1fr; }
+  }
+
+  @media (max-width: 960px) {
+    .app { flex-direction: column; }
+    .sidebar {
+      width: 100%;
+      height: auto;
+      position: relative;
+      border-right: 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .brand { display: flex; align-items: center; justify-content: space-between; }
+    nav {
+      display: flex;
+      flex-direction: row;
+      overflow-x: auto;
+      padding: 10px 12px;
+      gap: 6px;
+    }
+    .nav-item { white-space: nowrap; margin-bottom: 0; }
+    .nav-item.active::before { display: none; }
+    .sidebar-foot { display: none; }
+    .tagline { display: none; }
+    header.app-header { min-height: auto; padding: 12px 16px; }
+    .workspace { padding: 18px 16px 40px; }
+    .folder-item { grid-template-columns: 1fr; }
+    .kpi-row { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .page-title { font-size: 21px; }
+    .mini-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 560px) {
+    .kpi-row { grid-template-columns: 1fr; }
+    .kv, .report-meta, .meta-kv { grid-template-columns: 1fr; gap: 2px 0; }
+    .kv .k, .report-meta .k, .meta-kv .k { margin-top: 10px; }
+    .auth-row { grid-template-columns: 1fr; }
+    .bar-row { grid-template-columns: 1fr; gap: 6px; }
+    .bar-val { text-align: left; }
+    .timeline-item { grid-template-columns: 38px 1fr; }
+    .timeline-step { width: 38px; height: 38px; font-size: 12px; }
+    .timeline-item::after { left: 19px; }
+  }
+
+  .ai-verdict {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: var(--font-display);
+    font-size: 16px; font-weight: 650;
+    padding: 10px 14px; border-radius: 12px;
+    border: 1px solid rgba(63, 176, 216, 0.3);
+    background: linear-gradient(135deg, rgba(63,176,216,.14), rgba(11,17,30,.9));
+    margin-bottom: 12px;
+  }
+  .ai-narrative { display: grid; gap: 10px; }
+  .ai-narrative p { margin: 0; font-size: 13.5px; color: #cfd8e6; line-height: 1.65; }
+  .ai-narrative p strong { color: var(--text); }
+
+  /* ==========================================================
+     ThreatMail AI — COMMAND CENTER VISUAL LAYER (v2)
+     Purely presentational. No markup or behaviour changes.
+     ========================================================== */
+
+  :root {
+    --bg: #05070f;
+    --bg-elevated: #090f1c;
+    --sidebar: #05080f;
+    --panel: #0d1524;
+    --panel-hover: #14203a;
+    --border: rgba(120, 160, 220, 0.14);
+    --border-strong: rgba(130, 175, 240, 0.28);
+    --text: #eaf1fb;
+    --muted: #8ea0bd;
+    --accent: #35e0d0;
+    --accent-2: #4d8dff;
+    --accent-3: #a06bff;
+    --accent-hover: #63f2e4;
+    --accent-soft: rgba(53, 224, 208, 0.12);
+    --critical: #ff5a72;
+    --high: #ff9a3c;
+    --suspicious: #f5d34b;
+    --low: #34e39b;
+    --pass: #34e39b;
+    --fail: #ff5a72;
+    --warn: #f5d34b;
+    --radius: 18px;
+    --sidebar-w: 268px;
+    --header-h: 74px;
+    --glow-accent: 0 0 0 1px rgba(53,224,208,.22), 0 18px 48px -22px rgba(53,224,208,.55);
+    --shadow: 0 34px 70px -38px rgba(0,0,0,.95), 0 2px 0 rgba(255,255,255,.02) inset;
+  }
+
+  /* ---- Atmosphere: aurora + tactical mesh + vignette ---- */
+  body {
+    background:
+      radial-gradient(1200px 700px at 82% -14%, rgba(77, 141, 255, 0.18), transparent 60%),
+      radial-gradient(900px 620px at 2% 4%, rgba(160, 107, 255, 0.14), transparent 58%),
+      radial-gradient(1000px 700px at 50% 118%, rgba(53, 224, 208, 0.12), transparent 62%),
+      var(--bg);
+    letter-spacing: 0.1px;
+  }
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      linear-gradient(rgba(120, 170, 230, 0.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(120, 170, 230, 0.045) 1px, transparent 1px);
+    background-size: 46px 46px;
+    mask-image: radial-gradient(ellipse 110% 80% at 50% 0%, #000 20%, transparent 85%);
+    -webkit-mask-image: radial-gradient(ellipse 110% 80% at 50% 0%, #000 20%, transparent 85%);
+    animation: meshDrift 34s linear infinite;
+  }
+  @keyframes meshDrift { to { background-position: 46px 46px, 46px 46px; } }
+  body::after {
+    content: "";
+    position: fixed; inset: 0;
+    pointer-events: none; z-index: 0;
+    background: radial-gradient(ellipse 90% 70% at 50% 50%, transparent 45%, rgba(2,4,9,.72) 100%);
+  }
+  .app { position: relative; z-index: 1; }
+
+  /* ---- Sidebar: glass rail with luminous edge ---- */
+  .sidebar {
+    background:
+      linear-gradient(180deg, rgba(12,20,36,.92), rgba(5,8,15,.96));
+    backdrop-filter: blur(18px);
+    border-right: 1px solid var(--border);
+    box-shadow: 24px 0 60px -50px rgba(0,0,0,1);
+  }
+  .sidebar::after {
+    content: "";
+    position: absolute; top: 0; right: -1px; width: 1px; height: 100%;
+    background: linear-gradient(180deg, transparent, rgba(53,224,208,.55), rgba(77,141,255,.35), transparent);
+    opacity: .7;
+  }
+  .brand { padding: 24px 22px 20px; position: relative; }
+  .brand-icon {
+    width: 44px; height: 44px; border-radius: 14px;
+    background: linear-gradient(150deg, rgba(53,224,208,.28), rgba(77,141,255,.18) 55%, rgba(9,15,28,.95));
+    border: 1px solid rgba(53,224,208,.42);
+    box-shadow: 0 0 30px -6px rgba(53,224,208,.65), inset 0 0 18px -8px rgba(53,224,208,.9);
+    animation: brandBreathe 4.5s ease-in-out infinite;
+  }
+  @keyframes brandBreathe {
+    0%,100% { box-shadow: 0 0 26px -8px rgba(53,224,208,.5), inset 0 0 18px -10px rgba(53,224,208,.7); }
+    50% { box-shadow: 0 0 40px -6px rgba(53,224,208,.85), inset 0 0 22px -8px rgba(53,224,208,1); }
+  }
+  .brand-icon svg { width: 22px; height: 22px; }
+  .brand h1 {
+    font-size: 18px; letter-spacing: 3.4px; font-weight: 700;
+    background: linear-gradient(96deg, #ffffff 10%, var(--accent) 52%, var(--accent-2) 92%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .brand p { font-size: 9px; letter-spacing: 2px; color: #6f81a0; }
+
+  nav { padding: 16px 14px; gap: 4px; }
+  .nav-item {
+    padding: 11px 13px; border-radius: 12px; font-size: 13.5px; font-weight: 600;
+    letter-spacing: .2px; overflow: hidden;
+  }
+  .nav-item::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(90deg, rgba(53,224,208,.18), transparent 65%);
+    opacity: 0; transition: opacity .22s ease;
+  }
+  .nav-item:hover { background: rgba(20,32,58,.75); transform: translateX(2px); }
+  .nav-item:hover::after { opacity: .5; }
+  .nav-item.active {
+    background: linear-gradient(90deg, rgba(53,224,208,.20), rgba(77,141,255,.08) 55%, transparent);
+    border-color: rgba(53,224,208,.32);
+    box-shadow: inset 0 0 22px -14px rgba(53,224,208,.9);
+  }
+  .nav-item.active::before {
+    left: -14px; width: 3px; height: 26px;
+    background: linear-gradient(180deg, var(--accent), var(--accent-2));
+    box-shadow: 0 0 16px rgba(53,224,208,.95);
+  }
+  .sidebar-foot { font-size: 10px; letter-spacing: .6px; color: #66779a; }
+
+  /* ---- Header: mission bar ---- */
+  header.app-header {
+    padding: 0 30px;
+    background: linear-gradient(180deg, rgba(8,13,24,.9), rgba(6,10,19,.72));
+    backdrop-filter: blur(20px) saturate(1.2);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+  }
+  header.app-header::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(53,224,208,.6), rgba(77,141,255,.5), transparent);
+  }
+  .tagline {
+    font-size: 10px; letter-spacing: 3px;
+    color: #a9bcd8;
+    border-color: rgba(53,224,208,.28);
+    background: linear-gradient(120deg, rgba(53,224,208,.12), rgba(13,21,36,.85));
+    box-shadow: 0 0 26px -14px rgba(53,224,208,.9);
+  }
+  .status-pill, .case-chip {
+    background: linear-gradient(180deg, rgba(20,32,56,.9), rgba(11,17,30,.9));
+    border-color: var(--border);
+    box-shadow: var(--shadow-soft);
+  }
+  .status-dot { box-shadow: 0 0 12px rgba(52,227,155,.9); }
+
+  /* ---- Page headings ---- */
+  .workspace { padding: 30px 30px 70px; }
+  .page-title {
+    font-size: 34px; font-weight: 700; letter-spacing: -1.1px;
+    background: linear-gradient(94deg, #ffffff 8%, #cfe4ff 45%, var(--accent) 105%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .page-sub { font-size: 14px; color: #90a2c0; margin-bottom: 26px; }
+
+  /* ---- Pipeline ribbon ---- */
+  .pipeline { gap: 10px; margin-bottom: 26px; }
+  .pipeline-step {
+    border-radius: 999px; padding: 9px 16px;
+    letter-spacing: 2px; font-size: 10.5px;
+    background: linear-gradient(180deg, rgba(17,26,45,.85), rgba(9,14,26,.85));
+    border: 1px solid var(--border);
+    transition: all .25s ease;
+  }
+  .pipeline-step.on {
+    border-color: rgba(53,224,208,.45);
+    background: linear-gradient(120deg, rgba(53,224,208,.22), rgba(77,141,255,.12));
+    box-shadow: 0 0 32px -12px rgba(53,224,208,.95);
+    transform: translateY(-1px);
+  }
+  .pipeline-step span.n { color: var(--accent); }
+  .pipeline-arrow { color: rgba(140,175,225,.35); }
+
+  /* ---- KPI: hero telemetry tiles ---- */
+  .kpi-row { gap: 18px; margin-bottom: 26px; }
+  .kpi {
+    padding: 22px 24px 24px;
+    border-radius: 20px;
+    background:
+      radial-gradient(140% 100% at 0% 0%, rgba(53,224,208,.12), transparent 55%),
+      linear-gradient(180deg, rgba(19,29,50,.94), rgba(9,14,26,.94));
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    transition: transform .28s cubic-bezier(.22,1,.36,1), box-shadow .28s ease, border-color .28s ease;
+  }
+  .kpi::after { width: 4px; opacity: 1; box-shadow: 0 0 22px rgba(53,224,208,.85); }
+  .kpi::before {
+    content: ""; position: absolute; top: -60%; left: -30%;
+    width: 60%; height: 220%;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,.06), transparent);
+    transform: rotate(12deg) translateX(-140%);
+    transition: transform .9s cubic-bezier(.22,1,.36,1);
+  }
+  .kpi:hover { transform: translateY(-6px); box-shadow: 0 40px 70px -40px rgba(0,0,0,1), 0 0 0 1px rgba(53,224,208,.22); }
+  .kpi:hover::before { transform: rotate(12deg) translateX(320%); }
+  .kpi.threats::after { box-shadow: 0 0 22px rgba(245,211,75,.8); }
+  .kpi.high::after { box-shadow: 0 0 22px rgba(255,154,60,.8); }
+  .kpi.critical::after { box-shadow: 0 0 22px rgba(255,90,114,.85); }
+  .kpi-label { font-size: 10px; letter-spacing: 1.8px; color: #7d90b0; }
+  .kpi-value {
+    font-size: 46px; letter-spacing: -2px; margin-top: 12px;
+    text-shadow: 0 0 34px rgba(53,224,208,.28);
+  }
+  .kpi.critical .kpi-value { text-shadow: 0 0 34px rgba(255,90,114,.4); }
+  .kpi-hint { font-size: 11.5px; color: #778aab; margin-top: 8px; }
+
+  /* ---- Cards: glass panels with SOC corner brackets ---- */
+  .card {
+    position: relative;
+    padding: 24px 26px;
+    margin-bottom: 20px;
+    border-radius: 20px;
+    background:
+      radial-gradient(120% 90% at 100% 0%, rgba(77,141,255,.09), transparent 55%),
+      linear-gradient(180deg, rgba(16,25,43,.92), rgba(8,13,25,.94));
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    transition: border-color .25s ease, transform .25s ease, box-shadow .25s ease;
+  }
+  .card::before {
+    content: ""; position: absolute; inset: 0; border-radius: inherit;
+    pointer-events: none;
+    background:
+      linear-gradient(var(--accent), var(--accent)) top left / 16px 1px no-repeat,
+      linear-gradient(var(--accent), var(--accent)) top left / 1px 16px no-repeat,
+      linear-gradient(var(--accent-2), var(--accent-2)) bottom right / 16px 1px no-repeat,
+      linear-gradient(var(--accent-2), var(--accent-2)) bottom right / 1px 16px no-repeat;
+    opacity: .35;
+    transition: opacity .25s ease;
+  }
+  .card:hover {
+    border-color: rgba(53,224,208,.28);
+    box-shadow: 0 40px 80px -46px rgba(0,0,0,1), 0 0 0 1px rgba(53,224,208,.14);
+  }
+  .card:hover::before { opacity: .85; }
+  .card h2 {
+    font-size: 10.5px; letter-spacing: 2.2px; color: #93a6c4;
+    margin-bottom: 18px; padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .card h2::before {
+    width: 3px; height: 14px; border-radius: 2px;
+    background: linear-gradient(180deg, var(--accent), var(--accent-2));
+    box-shadow: 0 0 14px rgba(53,224,208,.95);
+  }
+
+  /* ---- Upload ---- */
+  .dropzone {
+    padding: 54px 26px; border-radius: 20px;
+    border: 1.5px dashed rgba(130,175,240,.3);
+    background:
+      radial-gradient(90% 120% at 50% 0%, rgba(53,224,208,.08), transparent 65%),
+      rgba(10,16,29,.6);
+    transition: all .28s ease;
+  }
+  .dropzone:hover, .dropzone.dragover {
+    border-color: rgba(53,224,208,.7);
+    box-shadow: inset 0 0 60px -30px rgba(53,224,208,.9), 0 0 44px -26px rgba(53,224,208,.8);
+    transform: translateY(-2px);
+  }
+  .dropzone h3 { font-size: 20px; letter-spacing: -.2px; }
+
+  /* ---- Buttons ---- */
+  .btn {
+    border-radius: 12px; font-weight: 650; letter-spacing: .3px;
+    transition: transform .18s ease, box-shadow .22s ease, filter .18s ease, background .18s ease;
+  }
+  .btn-primary {
+    background: linear-gradient(120deg, var(--accent) 0%, #2fb8ff 55%, var(--accent-2) 100%);
+    color: #04121a; border: 0;
+    box-shadow: 0 16px 36px -18px rgba(53,224,208,.95), inset 0 1px 0 rgba(255,255,255,.35);
+  }
+  .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 22px 44px -18px rgba(53,224,208,1); }
+  .btn-ghost:hover, .btn-accent:hover { transform: translateY(-1px); }
+
+  /* ---- Score ring: reactor core ---- */
+  .score-ring { width: 186px; height: 186px; }
+  .score-ring::after {
+    inset: -18px;
+    background: radial-gradient(circle, rgba(53,224,208,.22), transparent 68%);
+    filter: blur(6px);
+  }
+  .score-ring::before {
+    content: ""; position: absolute; inset: -10px; border-radius: 50%;
+    border: 1px dashed rgba(130,175,240,.22);
+    animation: ringSpin 26s linear infinite;
+  }
+  @keyframes ringSpin { to { transform: rotate(360deg); } }
+  .score-num {
+    font-size: 54px; letter-spacing: -2.5px;
+    text-shadow: 0 0 40px rgba(53,224,208,.35);
+  }
+  .cls-badge {
+    letter-spacing: 2.4px; padding: 9px 16px; border-radius: 999px;
+    backdrop-filter: blur(8px);
+  }
+  .CRITICAL { box-shadow: 0 0 34px -12px rgba(255,90,114,.95); }
+  .HIGH { box-shadow: 0 0 34px -12px rgba(255,154,60,.9); }
+  .SUSPICIOUS { box-shadow: 0 0 34px -14px rgba(245,211,75,.9); }
+  .LOW { box-shadow: 0 0 34px -14px rgba(52,227,155,.9); }
+
+  /* ---- Auth mechanism cards ---- */
+  .auth-card {
+    border-radius: 16px; padding: 16px;
+    background: linear-gradient(180deg, rgba(20,31,54,.85), rgba(10,16,29,.9));
+    transition: transform .22s ease, box-shadow .22s ease;
+  }
+  .auth-card:hover { transform: translateY(-4px); box-shadow: 0 24px 44px -30px rgba(0,0,0,1); }
+  .auth-pass { box-shadow: inset 0 0 30px -20px rgba(52,227,155,.9); }
+  .auth-fail { box-shadow: inset 0 0 30px -18px rgba(255,90,114,.9); }
+  .auth-warn { box-shadow: inset 0 0 30px -20px rgba(245,211,75,.9); }
+
+  /* ---- Risk breakdown bars ---- */
+  .bar-track {
+    height: 11px; border-radius: 99px;
+    background: rgba(12,20,36,.95);
+    border: 1px solid var(--border);
+    box-shadow: inset 0 2px 6px rgba(0,0,0,.6);
+  }
+  .bar-fill {
+    position: relative;
+    border-radius: 99px;
+    box-shadow: 0 0 18px -4px currentColor;
+    background-image: linear-gradient(90deg, rgba(255,255,255,.18), transparent 45%);
+  }
+  .bar-fill::after {
+    content: ""; position: absolute; inset: 0; border-radius: inherit;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent);
+    transform: translateX(-100%);
+    animation: barSheen 3.4s ease-in-out infinite;
+  }
+  @keyframes barSheen { 0% { transform: translateX(-100%); } 55%,100% { transform: translateX(220%); } }
+  .bar-val { font-size: 12.5px; }
+
+  /* ---- Mini cards / meta ---- */
+  .mini-card {
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(19,29,50,.8), rgba(9,15,27,.85));
+    transition: transform .2s ease, border-color .2s ease;
+  }
+  .mini-card:hover { transform: translateY(-3px); border-color: rgba(53,224,208,.3); }
+  .mini-card .label { letter-spacing: 1.5px; color: #7d90b0; }
+
+  /* ---- Reason list ---- */
+  .reason-list li {
+    padding: 12px 0;
+    transition: background .2s ease;
+  }
+  .reason-list li:hover { background: rgba(53,224,208,.04); }
+
+  /* ---- Graph + map surfaces ---- */
+  #graphCanvas {
+    border-radius: 18px;
+    background:
+      radial-gradient(90% 90% at 50% 0%, rgba(77,141,255,.10), transparent 60%),
+      #070c17;
+    box-shadow: inset 0 0 70px -30px rgba(53,224,208,.5);
+  }
+  .infrastructure-map-card, .infrastructure-summary-card {
+    border-radius: 20px;
+    box-shadow: var(--shadow);
+  }
+  #infraMap { border-radius: 18px; }
+  #infraMap .leaflet-tile-pane { filter: brightness(.55) contrast(1.25) saturate(.5) grayscale(.4) hue-rotate(170deg); }
+  .infra-map-overlay {
+    backdrop-filter: blur(14px);
+    border-radius: 16px;
+    box-shadow: 0 24px 50px -30px rgba(0,0,0,1);
+  }
+
+  /* ---- AI analysis panel ---- */
+  .ai-verdict {
+    font-size: 18px; padding: 13px 18px; border-radius: 14px;
+    border-color: rgba(160,107,255,.35);
+    background: linear-gradient(120deg, rgba(160,107,255,.18), rgba(53,224,208,.10) 60%, rgba(9,15,28,.9));
+    box-shadow: 0 0 40px -22px rgba(160,107,255,.95);
+  }
+  .ai-narrative p { font-size: 14px; color: #c8d6ea; }
+
+  /* ---- Loading / error ---- */
+  #loading {
+    border-radius: 14px;
+    background: linear-gradient(120deg, rgba(53,224,208,.10), rgba(11,17,30,.9));
+    border: 1px solid rgba(53,224,208,.28);
+  }
+  #error { border-radius: 14px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    body::before, .bar-fill::after, .score-ring::before, .brand-icon { animation: none !important; }
+  }
+
+  @media (max-width: 1100px) {
+    .kpi-value { font-size: 38px; }
+    .page-title { font-size: 27px; }
+  }
+.auth-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.auth-pass {
+  background: rgba(34, 197, 94, 0.14);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.auth-fail {
+  background: rgba(239, 68, 68, 0.14);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.auth-not-found {
+  background: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.auth-explanation {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">
+        <div class="brand-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M12 3l8 4v6c0 5-3.5 8.5-8 9.5C7.5 21.5 4 18 4 13V7l8-4z"/>
+            <path d="M9 12l2 2 4-4"/>
+          </svg>
+        </div>
+        <div>
+          <h1>ThreatMail AI</h1>
+          <p>AI Email Forensic Intelligence</p>
+          <div id="gmailMonitorStatus" class="gmail-monitor-status" title="Official Gmail API monitor">Gmail Monitor: checking…</div>
+        </div>
+      </div>
+    </div>
+    <nav>
+      <button class="nav-item active" data-view="overview">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Overview
+      </button>
+      <button class="nav-item" data-view="inbox">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16v12H4z"/><path d="M4 14h4l2 3h4l2-3h4"/></svg>
+        Inbox / Safe
+      </button>
+      <button class="nav-item" data-view="folder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7h6l2 2h10v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
+        Threat Folder
+      </button>
+      <button class="nav-item" data-view="investigation">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+        Investigation
+      </button>
+      <button class="nav-item" data-view="intel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l9 5v8l-9 5-9-5V8l9-5z"/><path d="M12 8v8M7.5 10.5L12 13l4.5-2.5"/></svg>
+        Threat Intelligence
+      </button>
+      <button class="nav-item" data-view="reports">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h8l4 4v14H7z"/><path d="M15 3v4h4M9 13h6M9 17h6"/></svg>
+        Reports
+      </button>
+      <button class="nav-item" data-view="settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M4.9 6.5l1.5 1.5M17.6 16l1.5 1.5M3 12h2M19 12h2M4.9 17.5l1.5-1.5M17.6 8l1.5-1.5"/></svg>
+        Settings
+      </button>
+    </nav>
+    <div class="sidebar-foot">SIH 2026 prototype · session storage only</div>
+  </aside>
+
+  <div class="main-col">
+    <header class="app-header">
+      <div class="tagline">DETECT &rarr; INVESTIGATE &rarr; CORRELATE &rarr; EXPLAIN</div>
+      <div class="header-right">
+        <div class="case-chip" id="headerCase">
+          <span id="headerCaseId">No active case</span>
+          <span class="cls" id="headerCaseCls"></span>
+        </div>
+        <div class="status-pill">
+          <span class="status-dot"></span>
+          OPERATIONAL
+        </div>
+      </div>
+    </header>
+
+    <div class="workspace">
+      <!-- OVERVIEW -->
+      <section class="view active" id="view-overview">
+        <h1 class="page-title">Security Overview</h1>
+        <p class="page-sub">Session metrics from emails analyzed in this browser. Nothing is stored on the server.</p>
+
+        <div class="pipeline">
+          <span class="pipeline-step on"><span class="n">01</span> DETECT</span><span class="pipeline-arrow">&rarr;</span>
+          <span class="pipeline-step"><span class="n">02</span> INVESTIGATE</span><span class="pipeline-arrow">&rarr;</span>
+          <span class="pipeline-step"><span class="n">03</span> CORRELATE</span><span class="pipeline-arrow">&rarr;</span>
+          <span class="pipeline-step"><span class="n">04</span> EXPLAIN</span>
+        </div>
+
+        <div class="kpi-row">
+          <div class="kpi">
+            <div class="kpi-label">Emails Analyzed</div>
+            <div class="kpi-value" id="kpiAnalyzed">0</div>
+            <div class="kpi-hint">This browser session</div>
+          </div>
+          <div class="kpi threats">
+            <div class="kpi-label">Threats Detected</div>
+            <div class="kpi-value" id="kpiThreats">0</div>
+            <div class="kpi-hint">Suspicious, High, or Critical</div>
+          </div>
+          <div class="kpi high">
+            <div class="kpi-label">High Risk</div>
+            <div class="kpi-value" id="kpiHigh">0</div>
+            <div class="kpi-hint">Classification HIGH</div>
+          </div>
+          <div class="kpi critical">
+            <div class="kpi-label">Critical</div>
+            <div class="kpi-value" id="kpiCritical">0</div>
+            <div class="kpi-hint">Classification CRITICAL</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Email Analysis</h2>
+          <div class="dropzone" id="dropzone">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#8b97ad" stroke-width="1.6">
+              <path d="M4 7h16v12H4z"/><path d="M4 7l8 6 8-6"/>
+            </svg>
+            <h3>Drop suspicious email here</h3>
+            <p>or <button type="button" class="link-btn" id="browseBtn">browse .eml file</button></p>
+            <input type="file" id="fileInput" accept=".eml" />
+            <div class="file-meta" id="filename">No file selected</div>
+            <div class="analyze-row">
+              <button class="btn btn-primary" id="analyzeBtn" disabled>ANALYZE EMAIL</button>
+            </div>
+            <div id="loading">Analyzing email — parsing headers, checking authentication, querying threat intelligence…</div>
+            <div id="error"></div>
+          </div>
+        </div>
+
+        <div class="overview-last" id="overviewLast"></div>
+      </section>
+
+      <!-- INBOX / SAFE -->
+      <section class="view" id="view-inbox">
+        <h1 class="page-title">Inbox / Safe</h1>
+        <p class="page-sub">Low-risk emails cleared by the deterministic analysis engine.</p>
+        <div id="inboxList"></div>
+      </section>
+
+      <!-- THREAT FOLDER -->
+      <section class="view" id="view-folder">
+        <h1 class="page-title">Threat Folder</h1>
+        <p class="page-sub">Suspicious, High, and Critical cases retained in this browser. Selecting a case opens Investigation.</p>
+        <div id="folderList"></div>
+      </section>
+
+      <!-- INVESTIGATION -->
+      <section class="view" id="view-investigation">
+        <div id="investigationEmpty" class="empty-state">
+          <h3>No active investigation</h3>
+          <p>Analyze a .eml file from Overview, or open a case from Threat Folder.</p>
+        </div>
+        <div id="investigationBody" style="display:none">
+          <div class="report-action-row no-print" style="margin-bottom:16px">
+            <button class="btn btn-accent" id="btnOpenInv" type="button">REFRESH WORKSPACE</button>
+            <span class="disposition-pill pending" id="invDisposition">PENDING</span>
+            <button class="btn btn-danger" id="btnQuarantine" type="button">KEEP QUARANTINED</button>
+            <button class="btn btn-safe" id="btnRelease" type="button">RELEASE EMAIL</button>
+            <button class="btn btn-ghost" id="btnReport" type="button">OPEN REPORT</button>
+          </div>
+
+          <div class="workspace-shell">
+            <div class="workspace-stack">
+              <div class="card">
+                <h2>Threat Summary</h2>
+                <div class="summary-grid">
+                  <div class="score-ring-wrap">
+                    <div class="score-ring">
+                      <svg width="148" height="148" viewBox="0 0 148 148" aria-hidden="true">
+                        <circle cx="74" cy="74" r="64" fill="none" stroke="#1c2740" stroke-width="10"/>
+                        <circle id="scoreArc" cx="74" cy="74" r="64" fill="none" stroke="#c47a3a" stroke-width="10"
+                          stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="402"/>
+                      </svg>
+                      <div class="score-center">
+                        <div class="score-num" id="scoreNum">0</div>
+                        <div class="score-den" id="scoreDen">/ 100</div>
+                      </div>
+                    </div>
+                    <div class="cls-badge" id="scoreBadge">—</div>
+                  </div>
+                  <div class="meta-kv">
+                    <div class="k">Case ID</div><div id="invCaseId">—</div>
+                    <div class="k">Subject</div><div id="invSubject">—</div>
+                    <div class="k">Sender</div><div id="invFrom">—</div>
+                    <div class="k">Reply-To</div><div id="invReplyTo">—</div>
+                    <div class="k">Analyzed</div><div id="invWhen">—</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card">
+                <h2>Why was this email flagged?</h2>
+                <ul class="reason-list" id="reasonList"></ul>
+              </div>
+
+              <div class="card">
+                <h2>AI Security Analysis</h2>
+                <p class="workspace-note">Plain-language explanation generated in the browser from this case's analysis JSON only. No new detections are invented.</p>
+                <div class="ai-verdict" id="aiVerdict">&mdash;</div>
+                <div id="aiNarrative" class="ai-narrative"></div>
+                <div class="evidence-chip-row" id="aiChips" style="margin-top:14px"></div>
+              </div>
+
+              <div class="card">
+                <h2>Authentication</h2>
+                <div class="auth-row" id="authRow"></div>
+              </div>
+
+              <div class="card">
+                <h2>Risk Breakdown</h2>
+                <div id="breakdownBars"></div>
+              </div>
+
+              <div class="card">
+                <h2>Original Email</h2>
+                <div id="protectedEmail" class="protected-email">
+                  <h3>🔒 Email content is quarantined</h3>
+                  <p>The original message is hidden while this case remains quarantined. You can still inspect all forensic evidence above.</p>
+                  <button class="btn btn-safe" id="btnProtectedRelease" type="button">RELEASE &amp; OPEN EMAIL</button>
+                </div>
+                <div id="releasedEmail" style="display:none">
+                  <div class="kv"><div class="k">Subject</div><div id="previewSubject"></div></div>
+                  <pre id="previewBody"></pre>
+                </div>
+              </div>
+            </div>
+
+            <div class="workspace-stack">
+              <div class="card graph-wrap">
+                <h2>Threat Relationship Graph</h2>
+                <p class="workspace-note">Derived only from the current analysis JSON. Nodes and edges are explicit or directly derived from returned evidence.</p>
+                <div id="graphCanvas"></div>
+                <div class="graph-fallback" id="graphFallback"></div>
+              </div>
+
+              <div class="card">
+                <h2>Investigation Timeline</h2>
+                <p class="workspace-note">Ordered investigation sequence. Exact timestamps are shown only when the analysis JSON already provides them.</p>
+                <ul class="timeline-list" id="timelineList"></ul>
+              </div>
+
+              <div class="card">
+                <h2>Threat Intelligence Snapshot</h2>
+                <div class="mini-grid" id="investigationIntelGrid"></div>
+                <div class="kv" id="investigationIntelKv"></div>
+                <div id="investigationIntelUrls"></div>
+              </div>
+
+              <div class="card">
+                <div class="infrastructure-panel">
+                  <div class="infrastructure-hero">
+                    <h2>Observed Sending Infrastructure</h2>
+                    <p>Where was this email's sending infrastructure observed?</p>
+                  </div>
+                  <div class="infrastructure-shell">
+                    <div class="infrastructure-map-card">
+                      <div class="infrastructure-map-wrap">
+                        <div id="infraMap"></div>
+                        <div class="infra-map-overlay">
+                          <div class="eyebrow">Observed sending infrastructure</div>
+                          <div class="headline" id="infraObservedHeadline">—</div>
+                          <div class="pulse-row"><span class="pulse"></span><span id="infraObservedSubline">—</span></div>
+                          <div class="subline" id="infraMapNote">Loading map…</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="infrastructure-summary-card">
+                      <div class="infra-meta-strip">
+                        <div class="infra-hint">Location summary</div>
+                        <div class="observed-in" id="infraObservedIn">—</div>
+                        <div class="observed-context" id="infraObservedContext">—</div>
+                      </div>
+                      <div class="infra-technical-grid" id="infraEvidenceGrid"></div>
+                      <p class="infra-explanation">This shows where the email's sending infrastructure was observed. It does not prove the physical location of the attacker.</p>
+                      <p class="infra-disclaimer" id="attributionNote"></p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card">
+                <h2>Indicators</h2>
+                <div class="kv" id="iocKv"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- THREAT INTEL -->
+      <section class="view" id="view-intel">
+        <h1 class="page-title">Threat Intelligence</h1>
+        <p class="page-sub">Indicators of compromise from the current case. Mock results are labeled DEMO DATA and live results are labeled LIVE API.</p>
+        <div id="intelEmpty" class="empty-state">
+          <h3>No indicators loaded</h3>
+          <p>Analyze an email to populate domain, URL, and IP intelligence.</p>
+        </div>
+        <div id="intelBody" style="display:none">
+          <div class="card">
+            <h2>Intel overview</h2>
+            <div class="mini-grid" id="intelSummaryGrid"></div>
+            <p class="workspace-note">The workspace only reflects values already present in the analysis response.</p>
+          </div>
+          <div class="card">
+            <h2>Indicator summary</h2>
+            <div class="kv" id="intelKv"></div>
+          </div>
+          <div class="card">
+            <h2>URL reputation</h2>
+            <div id="intelUrls"></div>
+          </div>
+          <div class="card">
+            <h2>Threat intelligence provenance</h2>
+            <div class="evidence-chip-row" id="intelProvenanceChips"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- REPORTS -->
+      <section class="view" id="view-reports">
+        <div class="report-shell">
+          <div class="report-action-row no-print">
+            <button class="btn btn-accent" type="button" id="btnPrintReport">DOWNLOAD PDF</button>
+            <button class="btn btn-ghost" type="button" id="btnReportPage">REFRESH REPORT</button>
+            <button class="btn btn-ghost" type="button" id="btnReportBack">BACK TO INVESTIGATION</button>
+          </div>
+          <div id="reportEmpty" class="empty-state">
+            <h3>No report available</h3>
+            <p>Analyze an email first. The report is built from the current case JSON and downloaded as a PDF.</p>
+          </div>
+          <div id="reportBody" class="report-page" style="display:none">
+            <div class="report-hero">
+              <h2>Forensic Intelligence Report</h2>
+              <p>Generated by the FastAPI report service from the current case JSON.</p>
+            </div>
+            <div class="report-grid">
+              <section class="report-section span-2">
+                <h3>Case overview</h3>
+                <div class="report-meta">
+                  <div class="k">Case ID</div><div id="reportCaseId">—</div>
+                  <div class="k">Classification</div><div id="reportClassification">—</div>
+                  <div class="k">Score</div><div id="reportScore">—</div>
+                  <div class="k">Analyzed</div><div id="reportAnalyzed">—</div>
+                  <div class="k">Subject</div><div id="reportSubject">—</div>
+                  <div class="k">Sender</div><div id="reportFrom">—</div>
+                  <div class="k">Reply-To</div><div id="reportReplyTo">—</div>
+                </div>
+              </section>
+              <section class="report-section">
+                <h3>Executive summary</h3>
+                <div id="reportSummary" class="report-meta"></div>
+              </section>
+              <section class="report-section">
+                <h3>Key evidence</h3>
+                <div class="evidence-chip-row" id="reportEvidenceChips"></div>
+              </section>
+              <section class="report-section">
+                <h3>Authentication</h3>
+                <div id="reportAuth" class="report-meta"></div>
+              </section>
+              <section class="report-section">
+                <h3>Infrastructure and intelligence</h3>
+                <div id="reportInfra" class="report-meta"></div>
+              </section>
+              <section class="report-section">
+                <h3>Investigation timeline</h3>
+                <ol id="reportTimeline" class="timeline-list"></ol>
+              </section>
+              <section class="report-section span-2">
+                <h3>Relationship map</h3>
+                <div id="reportRelations"></div>
+              </section>
+              <section class="report-section span-2">
+                <h3>Observed indicators</h3>
+                <div id="reportIndicators"></div>
+              </section>
+              <section class="report-section span-2">
+                <h3>Analyst notes</h3>
+                <p class="report-subtle">This report is intentionally constrained to the values present in the analysis response. It does not infer attacker identity, physical location, or hidden network context.</p>
+              </section>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="view" id="view-settings">
+        <h1 class="page-title">Settings</h1>
+        <p class="page-sub">Prototype configuration. Analysis still runs against the local FastAPI service.</p>
+        <div class="card">
+          <h2>Analysis service</h2>
+          <div class="kv">
+            <div class="k">API URL</div>
+            <div>http://127.0.0.1:8000</div>
+            <div class="k">Endpoint</div>
+            <div>POST /api/analyze</div>
+            <div class="k">Accepted file</div>
+            <div>.eml only, 5 MB server limit</div>
+            <div class="k">Case storage</div>
+            <div>Browser localStorage (up to 25 cases). Not a database.</div>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Threat intelligence honesty</h2>
+          <ul class="settings-list">
+            <li>SPF, DKIM, and DMARC values come from the email’s Authentication-Results header.</li>
+            <li>Risk scores and reasons are computed by the backend scoring engine.</li>
+            <li>Domain, URL, IP reputation, and geolocation may be <strong>DEMO DATA</strong> until API keys are configured.</li>
+            <li>DEMO DATA is never presented as a live vendor result. LIVE API appears only when the backend sets mock_mode to false.</li>
+            <li>Infrastructure is labeled observed sending infrastructure, not attacker location.</li>
+          </ul>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="actionModal" role="dialog" aria-modal="true" aria-labelledby="actionModalTitle">
+  <div class="modal">
+    <h2 id="actionModalTitle">Confirm action</h2>
+    <p id="actionModalBody"></p>
+    <p class="release-confirm-note" id="actionModalNote"></p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="actionModalCancel" type="button">CANCEL</button>
+      <button class="btn btn-safe" id="actionModalConfirm" type="button">CONFIRM</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const API_BASE = "http://127.0.0.1:8000";
+const STORAGE_KEY = "sentinelx.cases";
+const MAX_CASES = 25;
+const BREAKDOWN_CAPS = {
+  authentication: 20,
+  domain: 20,
+  url: 25,
+  ip_reputation: 15,
+  social_engineering: 10,
+  header_anomaly: 10
+};
+const BREAKDOWN_LABELS = {
+  authentication: "Authentication",
+  domain: "Domain",
+  url: "URL",
+  ip_reputation: "IP Reputation",
+  social_engineering: "Social Engineering",
+  header_anomaly: "Header Anomaly"
+};
+const BREAKDOWN_COLORS = {
+  authentication: "#c47a3a",
+  domain: "#c45c5c",  
+  url: "#7a6bb5",
+  ip_reputation: "#c4a035",
+  social_engineering: "#4a7fb5",
+  header_anomaly: "#6b7a94"
+};
+const CLASS_COLORS = {
+  CRITICAL: "#c45c5c",
+  HIGH: "#c47a3a",
+  SUSPICIOUS: "#c4a035",
+  LOW: "#3d9a6a"
+};
+
+const fileInput = document.getElementById("fileInput");
+const filenameEl = document.getElementById("filename");
+const loadingEl = document.getElementById("loading");
+const errorEl = document.getElementById("error");
+const dropzone = document.getElementById("dropzone");
+const analyzeBtn = document.getElementById("analyzeBtn");
+const toastEl = document.getElementById("toast");
+
+let graphInstance = null;
+let infraMapInstance = null;
+let infraMarkerInstance = null;
+
+const CITY_COORDS = {
+  amsterdam: { coords: [52.3676, 4.9041], zoom: 11, label: 'Amsterdam city center' },
+  london: { coords: [51.5074, -0.1278], zoom: 11, label: 'London city center' },
+  frankfurt: { coords: [50.1109, 8.6821], zoom: 11, label: 'Frankfurt city center' },
+  moscow: { coords: [55.7558, 37.6173], zoom: 11, label: 'Moscow city center' },
+  singapore: { coords: [1.3521, 103.8198], zoom: 11, label: 'Singapore city center' },
+  'new york': { coords: [40.7128, -74.006], zoom: 10, label: 'New York city center' },
+  mumbai: { coords: [19.076, 72.8777], zoom: 11, label: 'Mumbai city center' },
+  pune: { coords: [18.5204, 73.8567], zoom: 11, label: 'Pune city center (synthetic demo)' },
+  sydney: { coords: [-33.8688, 151.2093], zoom: 11, label: 'Sydney city center (synthetic demo)' },
+  unknown: null,
+  other: null
+};
+
+const COUNTRY_COORDS = {
+  netherlands: { coords: [52.1326, 5.2913], zoom: 7, label: 'Netherlands country centroid' },
+  'united kingdom': { coords: [55.3781, -3.436], zoom: 6, label: 'United Kingdom country centroid' },
+  uk: { coords: [55.3781, -3.436], zoom: 6, label: 'United Kingdom country centroid' },
+  germany: { coords: [51.1657, 10.4515], zoom: 6, label: 'Germany country centroid' },
+  russia: { coords: [61.524, 105.3188], zoom: 3, label: 'Russia country centroid' },
+  singapore: { coords: [1.3521, 103.8198], zoom: 10, label: 'Singapore country centroid' },
+  'united states': { coords: [39.8283, -98.5795], zoom: 4, label: 'United States country centroid' },
+  usa: { coords: [39.8283, -98.5795], zoom: 4, label: 'United States country centroid' },
+  india: { coords: [20.5937, 78.9629], zoom: 5, label: 'India country centroid' }
+};
+
+let selectedFile = null;
+let currentData = null;
+let toastTimer = null;
+
+document.querySelectorAll(".nav-item").forEach((btn) => {
+  btn.addEventListener("click", () => setView(btn.dataset.view));
+});
+
+document.getElementById("browseBtn").addEventListener("click", () => fileInput.click());
+fileInput.addEventListener("change", () => {
+  if (fileInput.files[0]) selectFile(fileInput.files[0]);
+});
+
+["dragenter", "dragover"].forEach((evt) => {
+  dropzone.addEventListener(evt, (e) => {
+    e.preventDefault();
+    dropzone.classList.add("dragover");
+  });
+});
+["dragleave", "drop"].forEach((evt) => {
+  dropzone.addEventListener(evt, (e) => {
+    e.preventDefault();
+    dropzone.classList.remove("dragover");
+  });
+});
+dropzone.addEventListener("drop", (e) => {
+  const file = e.dataTransfer.files[0];
+  if (file) selectFile(file);
+});
+
+analyzeBtn.addEventListener("click", analyzeEmail);
+
+document.getElementById("btnOpenInv").addEventListener("click", () => {
+  setView("investigation");
+  showToast("Investigation", "Showing the current case workspace. No additional backend call was made.");
+});
+document.getElementById("btnQuarantine").addEventListener("click", () => confirmDisposition("quarantined"));
+document.getElementById("btnRelease").addEventListener("click", () => confirmDisposition("released"));
+document.getElementById("btnProtectedRelease").addEventListener("click", () => confirmDisposition("released"));
+document.getElementById("btnReport").addEventListener("click", openReportWorkspace);
+document.getElementById("btnReportPage").addEventListener("click", refreshReportWorkspace);
+document.getElementById("btnPrintReport").addEventListener("click", printReportWorkspace);
+document.getElementById("btnReportBack").addEventListener("click", () => setView("investigation"));
+
+function selectFile(file) {
+  errorEl.style.display = "none";
+  if (!file.name.toLowerCase().endsWith(".eml")) {
+    selectedFile = null;
+    analyzeBtn.disabled = true;
+    filenameEl.textContent = "Please choose a .eml file";
+    errorEl.textContent = "Please upload a .eml file";
+    errorEl.style.display = "block";
+    return;
+  }
+  selectedFile = file;
+  filenameEl.textContent = file.name + " · " + (file.size / 1024).toFixed(1) + " KB";
+  analyzeBtn.disabled = false;
+}
+
+async function analyzeEmail() {
+  if (!selectedFile) return;
+  errorEl.style.display = "none";
+  loadingEl.style.display = "block";
+  analyzeBtn.disabled = true;
+
+  const formData = new FormData();
+  formData.append("file", selectedFile);
+
+  try {
+    const resp = await fetch(`${API_BASE}/api/analyze`, { method: "POST", body: formData });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ detail: "Unknown error" }));
+      throw new Error(err.detail || `Server returned ${resp.status}`);
+    }
+    const data = await resp.json();
+    const initialDisposition = persistCase(data);
+    if (initialDisposition === "released") {
+      try {
+        await fetch(`${API_BASE}/api/cases/${encodeURIComponent(data.case_id)}/disposition`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ disposition: "released" })
+        });
+      } catch (_) {
+        // Keep the safe classification in Inbox even if the optional backend state update fails.
+      }
+    }
+    renderResult(data, initialDisposition);
+    updateKPIs();
+    renderInbox();
+    renderFolder();
+    setView(initialDisposition === "released" ? "inbox" : "investigation");
+  } catch (e) {
+    errorEl.textContent = "Analysis failed: " + e.message + ". Is the backend running on port 8000?";
+    errorEl.style.display = "block";
+  } finally {
+    loadingEl.style.display = "none";
+    analyzeBtn.disabled = !selectedFile;
+  }
+}
+
+function loadCases() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function saveCases(cases) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(cases));
+}
+
+function persistCase(data) {
+  const cases = loadCases().filter((c) => c.case_id !== data.case_id);
+  const classification = data.risk && data.risk.classification || "LOW";
+  const disposition = classification === "LOW" ? "released" : "quarantined";
+  cases.unshift({
+    case_id: data.case_id,
+    analyzed_at: data.analyzed_at,
+    classification,
+    total_score: data.risk && data.risk.total_score,
+    subject: data.email_metadata && data.email_metadata.subject,
+    from: data.email_metadata && data.email_metadata.from,
+    disposition,
+    data
+  });
+  saveCases(cases.slice(0, MAX_CASES));
+  return disposition;
+}
+
+function updateKPIs() {
+  const cases = loadCases();
+  document.getElementById("kpiAnalyzed").textContent = cases.length;
+  document.getElementById("kpiThreats").textContent = cases.filter((c) =>
+    ["SUSPICIOUS", "HIGH", "CRITICAL"].includes(c.classification)
+  ).length;
+  document.getElementById("kpiHigh").textContent = cases.filter((c) => c.classification === "HIGH").length;
+  document.getElementById("kpiCritical").textContent = cases.filter((c) => c.classification === "CRITICAL").length;
+}
+
+function caseButton(c) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "folder-item";
+  const cls = c.classification || "LOW";
+  const isSafe = cls === "LOW";
+  btn.innerHTML =
+    '<div><div class="sub"></div><div class="id"></div></div>' +
+    '<span class="cls-badge ' + cls + '"></span>' +
+    '<span class="disp-tag"></span>';
+  btn.querySelector(".sub").textContent = c.subject || "(no subject)";
+  btn.querySelector(".id").textContent = c.case_id + " · " + formatWhen(c.analyzed_at);
+  btn.querySelector(".cls-badge").textContent = isSafe ? "SAFE" : cls;
+  btn.querySelector(".disp-tag").textContent = isSafe ? "INBOX" : (c.disposition || "quarantined").toUpperCase();
+  btn.addEventListener("click", () => {
+    currentData = c.data;
+    renderResult(c.data, c.disposition || (isSafe ? "released" : "quarantined"));
+    setView("investigation");
+  });
+  return btn;
+}
+
+function renderInbox() {
+  const wrap = document.getElementById("inboxList");
+  if (!wrap) return;
+  const cases = loadCases().filter((c) => (c.classification || "LOW") === "LOW");
+  if (!cases.length) {
+    wrap.innerHTML = '<div class="empty-state"><h3>Inbox is empty</h3><p>Emails classified LOW will appear here automatically.</p></div>';
+    return;
+  }
+  wrap.innerHTML = '<div class="folder-list"></div>';
+  const list = wrap.firstChild;
+  cases.forEach((c) => list.appendChild(caseButton(c)));
+}
+
+function renderFolder() {
+  const wrap = document.getElementById("folderList");
+  const cases = loadCases().filter((c) => ["SUSPICIOUS", "HIGH", "CRITICAL"].includes(c.classification));
+  if (!cases.length) {
+    wrap.innerHTML = '<div class="empty-state"><h3>Threat folder is empty</h3><p>Suspicious, High, and Critical emails will appear here automatically.</p></div>';
+    return;
+  }
+  wrap.innerHTML = '<div class="folder-list"></div>';
+  const list = wrap.firstChild;
+  cases.forEach((c) => list.appendChild(caseButton(c)));
+}
+
+function renderOverviewLast() {
+  const el = document.getElementById("overviewLast");
+  if (!currentData) {
+    el.innerHTML = "";
+    return;
+  }
+  const r = currentData.risk || {};
+  el.innerHTML =
+    '<div class="card"><h2>Latest case</h2><div class="meta-kv">' +
+    '<div class="k">Case</div><div></div>' +
+    '<div class="k">Classification</div><div></div>' +
+    '<div class="k">Score</div><div></div>' +
+    '<div class="k">Subject</div><div></div></div>' +
+    '<div class="actions" style="margin-top:14px"><button type="button" class="btn btn-accent" id="overviewOpen">OPEN INVESTIGATION</button></div></div>';
+  const vals = el.querySelectorAll(".meta-kv div:not(.k)");
+  vals[0].textContent = currentData.case_id;
+  vals[1].textContent = r.classification || "—";
+  vals[2].textContent = (r.total_score ?? "—") + " / " + (r.max_possible ?? "100");
+  vals[3].textContent = (currentData.email_metadata && currentData.email_metadata.subject) || "(no subject)";
+  document.getElementById("overviewOpen").addEventListener("click", () => setView("investigation"));
+}
+
+function mockTag(obj) {
+  if (!obj) return "";
+  if (obj.mock_mode === true) return '<span class="badge-mock">DEMO DATA</span>';
+  if (obj.mock_mode === false) return '<span class="badge-real">LIVE API</span>';
+  return "";
+}
+
+function renderInfrastructureWorkspace(data) {
+  const target = document.getElementById("infraMap");
+  const evidenceGrid = document.getElementById("infraEvidenceGrid");
+  const observedHeadline = document.getElementById("infraObservedHeadline");
+  const observedSubline = document.getElementById("infraObservedSubline");
+  const observedIn = document.getElementById("infraObservedIn");
+  const observedContext = document.getElementById("infraObservedContext");
+  const mapNote = document.getElementById("infraMapNote");
+  if (!target || !evidenceGrid || !observedHeadline || !observedSubline || !observedIn || !observedContext || !mapNote) return;
+
+  const infra = data.infrastructure || {};
+  const geo = infra.geolocation || {};
+  const ipRep = infra.ip_reputation || {};
+  const earliest = infra.earliest_public_ip || {};
+  const city = geo.city || "Unknown";
+  const country = geo.country || "Unknown";
+  const observedLabel = [city, country].filter(Boolean).join(", ") || "Unknown";
+  const dataSource = geo.mock_mode === true ? "DEMO DATA" : geo.mock_mode === false ? "LIVE API" : "N/A";
+  const cityKey = slugify(city);
+  const countryKey = slugify(country);
+  const cityMatch = CITY_COORDS[cityKey] || CITY_COORDS.unknown || CITY_COORDS.other;
+  const countryMatch = COUNTRY_COORDS[countryKey] || null;
+  const hasCityCoordinates = !!(cityMatch && cityMatch.coords);
+  const hasCountryCoordinates = !!(countryMatch && countryMatch.coords);
+  const resolved = hasCityCoordinates ? cityMatch : hasCountryCoordinates ? countryMatch : null;
+  const safeCoords = resolved && Array.isArray(resolved.coords) && resolved.coords.length === 2
+    ? [Number(resolved.coords[0]), Number(resolved.coords[1])]
+    : null;
+  const safeCoordsValid = !!(safeCoords && Number.isFinite(safeCoords[0]) && Number.isFinite(safeCoords[1]));
+  const latLng = safeCoordsValid ? L.latLng(safeCoords[0], safeCoords[1]) : null;
+  const markerLevel = hasCityCoordinates ? "city" : hasCountryCoordinates ? "country" : "none";
+
+  observedHeadline.textContent = observedLabel;
+  observedSubline.textContent = "Observed sending infrastructure";
+  observedIn.textContent = "Observed in: " + observedLabel;
+  observedContext.textContent = "Observed sending infrastructure";
+  if (markerLevel === "city") {
+    mapNote.textContent = "Approximate city-level location based on observed infrastructure data (demo lookup, not precise geolocation)";
+    mapNote.classList.remove("infra-map-note-fallback");
+  } else if (markerLevel === "country") {
+    mapNote.textContent = "Approximate country-level fallback only";
+    mapNote.classList.add("infra-map-note-fallback");
+  } else {
+    mapNote.textContent = "Approximate country-level fallback only";
+    mapNote.classList.add("infra-map-note-fallback");
+  }
+
+  const technicalRows = [
+    ["Observed IP", earliest.ip || "Not found"],
+    ["Country", geo.country || "—"],
+    ["City / Region", geo.city || "—"],
+    ["ISP", geo.isp || "—"],
+    ["ASN", geo.asn || "—"],
+    ["VPN / Proxy", geo.vpn_or_proxy_suspected ? "Yes" : "No / Unknown"],
+    ["IP Reputation", ipRep.verdict || (ipRep.abuse_confidence_score != null ? String(ipRep.abuse_confidence_score) : "N/A")],
+    ["Data Source", dataSource]
+  ];
+
+  evidenceGrid.innerHTML = technicalRows.map(([label, value]) => {
+    return '<div class="infra-technical-item"><div class="label">' + escapeHtml(label) + '</div><div class="value">' + escapeHtml(value) + '</div></div>';
+  }).join("");
+
+  if (infraMapInstance) {
+    infraMapInstance.remove();
+    infraMapInstance = null;
+  }
+  if (infraMarkerInstance) {
+    infraMarkerInstance.remove();
+    infraMarkerInstance = null;
+  }
+
+  if (!window.L) {
+    target.innerHTML = '<div style="padding:16px;color:var(--muted)">Map unavailable.</div>';
+    return;
+  }
+
+  infraMapInstance = L.map("infraMap", {
+    zoomControl: true,
+    attributionControl: true,
+    worldCopyJump: true,
+    preferCanvas: true,
+    scrollWheelZoom: false
+  });
+
+  // OpenStreetMap is used directly so the demo does not require a CARTO API key.
+  const osmLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    subdomains: "abc",
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors',
+    noWrap: true
+  }).addTo(infraMapInstance);
+
+  if (latLng) {
+    const targetZoom = Number(resolved.zoom || (markerLevel === "city" ? 11 : 6));
+    infraMapInstance.setView(latLng, targetZoom, { animate: false });
+  } else {
+    infraMapInstance.fitWorld({ animate: false });
+  }
+
+  const markerHtml = '<div class="infra-marker-wrap"><div class="infra-marker-ring"></div><div class="infra-marker-pin"></div></div>';
+  const markerIcon = L.divIcon({
+    className: "infra-marker-icon",
+    html: markerHtml,
+    iconSize: [28, 28],
+    iconAnchor: [14, 22],
+    popupAnchor: [0, -20]
+  });
+
+  const popupLines = [
+  '<strong>' + escapeHtml(observedLabel) + '</strong>',
+  'Observed sending infrastructure',
+  'ISP: ' + escapeHtml(geo.isp || 'Unknown'),
+  'ASN: ' + escapeHtml(geo.asn || 'Unknown'),
+  'IP reputation: ' + escapeHtml(ipRep.verdict || (ipRep.abuse_confidence_score != null ? String(ipRep.abuse_confidence_score) : 'N/A')),
+  dataSource + ' ' + mockTag(geo),
+];
+  if (latLng) {
+    infraMarkerInstance = L.marker(latLng, { icon: markerIcon, keyboard: false, riseOnHover: true }).addTo(infraMapInstance);
+    infraMarkerInstance.bindPopup('<div>' + popupLines.map((line) => '<div>' + line + '</div>').join('') + '</div>', { closeButton: true, offset: [0, -6] });
+    infraMarkerInstance.bindTooltip('Click for infrastructure details', { direction: 'top', sticky: true, opacity: 0.95 });
+    const flyZoom = Number(markerLevel === 'city' ? 11 : 6);
+    window.requestAnimationFrame(() => {
+      window.setTimeout(() => {
+        try {
+          infraMapInstance.flyTo(latLng, flyZoom, { animate: true, duration: 1.15, easeLinearity: 0.2 });
+        } catch {
+          infraMapInstance.setView(latLng, flyZoom, { animate: false });
+        }
+      }, 0);
+    });
+    infraMarkerInstance.on('mouseover', () => infraMarkerInstance.openPopup());
+    infraMarkerInstance.on('click', () => infraMarkerInstance.openPopup());
+  }
+
+  const overlay = L.control({ position: "bottomleft" });
+  overlay.onAdd = function () {
+    const div = L.DomUtil.create("div");
+    div.style.padding = "10px 12px";
+    div.style.borderRadius = "10px";
+    div.style.background = "rgba(11, 18, 32, 0.85)";
+    div.style.border = "1px solid rgba(74, 127, 181, 0.3)";
+    div.style.color = "#e8edf5";
+    div.style.fontSize = "12px";
+    div.style.boxShadow = "0 8px 24px rgba(0, 0, 0, 0.28)";
+    div.innerHTML = '<div style="display:flex;align-items:center;gap:8px"><span class="pulse"></span><span>' + escapeHtml(mapNote.textContent || 'Approximate country-level fallback only') + '</span></div>';
+    return div;
+  };
+  overlay.addTo(infraMapInstance);
+
+  window.requestAnimationFrame(() => infraMapInstance && infraMapInstance.invalidateSize());
+}
+
+function authClass(verdict) {
+  const v = (verdict || "not_found").toLowerCase();
+  if (v === "pass") return "auth-pass";
+  if (v === "fail") return "auth-fail";
+  if (v === "softfail" || v === "neutral" || v === "temperror" || v === "permerror") return "auth-warn";
+  return "auth-na";
+}
+
+function reasonSeverity(reason) {
+  const t = (reason || "").toLowerCase();
+  if (t.includes("no significant risk")) return { label: "INFO", cls: "sev-info" };
+  if (
+    t.includes("spf") || t.includes("dkim") || t.includes("dmarc") ||
+    t.includes("lookalike") || t.includes("flagged") || t.includes("abuse") ||
+    t.includes("url ") || t.includes("reply-to")
+  ) return { label: "HIGH", cls: "sev-high" };
+  if (t.includes("language detected") || t.includes("urgency") || t.includes("credential") || t.includes("payment")) {
+    return { label: "MED", cls: "sev-med" };
+  }
+  return { label: "MED", cls: "sev-med" };
+}
+
+function formatWhen(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? iso : d.toLocaleString();
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function slugify(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function shorten(value, maxLength = 34) {
+  const text = String(value || "");
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength - 1) + "…";
+}
+
+function mockLabel(obj) {
+  return mockTag(obj);
+}
+
+function renderKeyValuePairs(targetId, rows) {
+  const target = document.getElementById(targetId);
+  if (!target) return;
+
+  target.innerHTML = rows.map(([label, value]) => {
+    if (targetId === 'reportAuth' && ['SPF', 'DKIM', 'DMARC'].includes(label)) {
+      const raw = String(value || '').toLowerCase();
+
+      let statusClass = 'auth-not-found';
+      let statusText = 'NOT FOUND';
+
+      if (raw.includes('pass')) {
+        statusClass = 'auth-pass';
+        statusText = 'PASS';
+      } else if (raw.includes('fail')) {
+        statusClass = 'auth-fail';
+        statusText = 'FAIL';
+      }
+
+      const explanation = statusText === 'NOT FOUND'
+        ? '<span class="auth-explanation">No authentication result present in message headers</span>'
+        : '';
+
+      return '<div class="k">' + escapeHtml(label) + '</div>' +
+             '<div class="v">' +
+             '<span class="auth-status ' + statusClass + '">' + statusText + '</span>' +
+             explanation +
+             '</div>';
+    }
+
+    return '<div class="k">' + escapeHtml(label) + '</div><div class="v">' + value + '</div>';
+  }).join("");
+}
+function buildRelationshipModel(data) {
+  const meta = data.email_metadata || {};
+  const infra = data.infrastructure || {};
+  const ind = data.indicators || {};
+  const risk = data.risk || {};
+  const auth = data.authentication || {};
+  const content = data.content_analysis || {};
+  const nodes = [];
+  const edges = [];
+  const seen = new Set();
+  const addNode = (id, label, type, detail) => {
+    if (!id || seen.has(id)) return;
+    seen.add(id);
+    nodes.push({ data: { id, label, type, detail: detail || "" } });
+  };
+  const addEdge = (source, target, label, type) => {
+    if (!source || !target) return;
+    edges.push({ data: { id: source + "__" + target + "__" + edges.length, source, target, label: label || "", type: type || "link" } });
+  };
+
+  const caseId = "case-" + slugify(data.case_id || "case");
+  addNode(caseId, data.case_id || "Current case", "case", meta.subject || "");
+
+  if (meta.sender_domain) {
+    const senderId = "sender-" + slugify(meta.sender_domain);
+    addNode(senderId, meta.sender_domain, "domain", "Sender domain");
+    addEdge(caseId, senderId, "from", "metadata");
+
+    const domainRep = ind.domain_reputation || {};
+    if (domainRep.verdict || domainRep.flagged != null || domainRep.mock_mode != null) {
+      const repId = senderId + "-reputation";
+      addNode(repId, domainRep.verdict || "Domain reputation", "intel", domainRep.mock_mode === true ? "DEMO DATA" : domainRep.mock_mode === false ? "LIVE API" : "");
+      addEdge(senderId, repId, "checked against", "intel");
+    }
+  }
+
+  if (meta.reply_to) {
+    const replyId = "reply-" + slugify(meta.reply_to);
+    addNode(replyId, meta.reply_to, "reply", "Reply-To header");
+    addEdge(caseId, replyId, "reply-to", "metadata");
+    if (meta.reply_to_domain && meta.sender_domain && meta.reply_to_domain !== meta.sender_domain) {
+      addEdge("sender-" + slugify(meta.sender_domain), replyId, "mismatch", "anomaly");
+    }
+  }
+
+  const earliestIp = infra.earliest_public_ip || {};
+  if (earliestIp.ip) {
+    const ipId = "ip-" + slugify(earliestIp.ip);
+    addNode(ipId, earliestIp.ip, "ip", earliestIp.note || "Observed sending infrastructure");
+    addEdge(caseId, ipId, "relay chain", "infrastructure");
+    const ipRep = infra.ip_reputation || {};
+    if (ipRep.verdict || ipRep.mock_mode != null || ipRep.abuse_confidence_score != null) {
+      const repId = ipId + "-reputation";
+      addNode(repId, ipRep.verdict || (ipRep.abuse_confidence_score != null ? String(ipRep.abuse_confidence_score) : "IP reputation"), "intel", ipRep.mock_mode === true ? "DEMO DATA" : ipRep.mock_mode === false ? "LIVE API" : "");
+      addEdge(ipId, repId, "checked against", "intel");
+    }
+  }
+
+  if (infra.geolocation) {
+    const geo = infra.geolocation;
+    const geoLabel = [geo.country, geo.city].filter(Boolean).join(" / ") || "Geolocation unavailable";
+    const geoId = "geo-" + slugify((earliestIp.ip || "geo") + "-" + geoLabel);
+    addNode(geoId, geoLabel, "geo", geo.mock_mode === true ? "DEMO DATA" : geo.mock_mode === false ? "LIVE API" : "Observed location data");
+    if (earliestIp.ip) {
+      addEdge("ip-" + slugify(earliestIp.ip), geoId, "geolocated as", "intel");
+    }
+  }
+
+  const urls = Array.isArray(ind.urls) ? ind.urls : [];
+  const urlReps = Array.isArray(ind.url_reputations) ? ind.url_reputations : [];
+  urls.forEach((url, index) => {
+    const urlId = "url-" + slugify(url || String(index));
+    addNode(urlId, shorten(url, 42), "url", "Extracted from email body");
+    addEdge(caseId, urlId, "contains", "ioc");
+    const host = (ind.url_domains || [])[index];
+    if (host) {
+      const hostId = "host-" + slugify(host);
+      addNode(hostId, host, "domain", "URL host");
+      addEdge(urlId, hostId, "resolves to", "ioc");
+    }
+    const rep = urlReps[index] || {};
+    if (rep.verdict || rep.mock_mode != null || rep.engines_flagged != null) {
+      const repId = urlId + "-reputation";
+      const repLabel = rep.verdict || (rep.engines_flagged != null ? String(rep.engines_flagged) + " engines" : "URL reputation");
+      addNode(repId, repLabel, "intel", rep.mock_mode === true ? "DEMO DATA" : rep.mock_mode === false ? "LIVE API" : "");
+      addEdge(urlId, repId, "checked against", "intel");
+    }
+  });
+
+  const lookalike = ind.lookalike_domain || {};
+  if (lookalike.is_lookalike && lookalike.matched_against) {
+    const lookId = "lookalike-" + slugify(lookalike.matched_against);
+    addNode(lookId, lookalike.matched_against, "watchlist", "Lookalike match target");
+    if (meta.sender_domain) {
+      addEdge("sender-" + slugify(meta.sender_domain), lookId, "resembles", "anomaly");
+    }
+  }
+
+  const authParts = [];
+  ["spf", "dkim", "dmarc"].forEach((key) => {
+    if (auth[key]) authParts.push(key.toUpperCase() + " " + auth[key]);
+  });
+  const authId = "auth-" + slugify(data.case_id || "case");
+  addNode(authId, authParts.length ? authParts.join(" · ") : "Authentication analysis", "auth", auth.raw_header_present ? "Header present" : "No authentication headers returned");
+  addEdge(caseId, authId, "authentication", "analysis");
+
+  const contentCount = content.total_hits != null ? content.total_hits : 0;
+  const contentNodeId = "content-" + slugify(data.case_id || "case");
+  addNode(contentNodeId, contentCount ? contentCount + " content hits" : "No content hits", "content", "Keyword-based social engineering analysis");
+  addEdge(caseId, contentNodeId, "content scan", "analysis");
+
+  const riskId = "risk-" + slugify(data.case_id || "case");
+  addNode(riskId, (risk.classification || "LOW") + " · " + (risk.total_score != null ? risk.total_score : 0), "risk", "Weighted risk score");
+  addEdge(caseId, riskId, "final score", "analysis");
+
+  return { nodes, edges };
+}
+
+function buildTimelineEvents(data) {
+  const meta = data.email_metadata || {};
+  const infra = data.infrastructure || {};
+  const ind = data.indicators || {};
+  const risk = data.risk || {};
+  const content = data.content_analysis || {};
+  const events = [];
+  const push = (title, detail, stamp) => events.push({ title, detail, stamp: stamp || "" });
+
+  push("Case received", "The browser uploaded the .eml file to the local FastAPI service.", data.analyzed_at);
+  if (meta.date) push("Message date header", "The message claims a sent date of " + meta.date + ".", meta.date);
+  push("Authentication parsed", ["SPF", "DKIM", "DMARC"].map((key) => key + ": " + ((data.authentication || {})[key.toLowerCase()] || "not_found")).join(" · ") + ".", "");
+  const ip = (infra.earliest_public_ip || {}).ip;
+  if (ip) {
+    push("Relay chain reviewed", "Earliest public IP observed in the headers: " + ip + ".", "");
+  } else {
+    push("Relay chain reviewed", "No reliable public IP could be derived from the headers.", "");
+  }
+  const urlCount = Array.isArray(ind.urls) ? ind.urls.length : 0;
+  const domainCount = Array.isArray(ind.url_domains) ? ind.url_domains.length : 0;
+  push("Indicators extracted", (urlCount || domainCount) ? (urlCount + " URL(s) and " + domainCount + " domain(s) extracted from the body.") : "No URLs or domains were extracted from the body.", "");
+  const contentHits = content.total_hits || 0;
+  push("Content reviewed", contentHits ? contentHits + " social-engineering phrase hit(s) detected." : "No social-engineering keywords were matched.", "");
+  push("Threat intelligence queried", "Domain, URL, IP, and geolocation lookups were performed using the returned intelligence payload.", "");
+  push("Risk scored", "Final classification: " + (risk.classification || "LOW") + " with score " + (risk.total_score != null ? risk.total_score : 0) + ".", "");
+  return events;
+}
+
+function renderGraph(targetId, data) {
+  const target = document.getElementById(targetId);
+  const fallback = document.getElementById(targetId === "graphCanvas" ? "graphFallback" : null);
+  if (!target) return;
+  const model = buildRelationshipModel(data);
+  const summary = model.edges.length ? model.edges.map((edge) => {
+    const source = model.nodes.find((node) => node.data.id === edge.data.source);
+    const targetNode = model.nodes.find((node) => node.data.id === edge.data.target);
+    return '<div class="graph-edge-item"><strong>' + escapeHtml(source ? source.data.label : edge.data.source) + '</strong> ' + escapeHtml(edge.data.label || '→') + ' <strong>' + escapeHtml(targetNode ? targetNode.data.label : edge.data.target) + '</strong></div>';
+  }).join("") : '<div class="graph-edge-item">No relationship data available.</div>';
+
+  if (fallback) fallback.innerHTML = summary;
+
+  if (!window.cytoscape || !model.nodes.length) {
+    target.innerHTML = '';
+    return;
+  }
+
+  const elements = [...model.nodes, ...model.edges];
+  if (graphInstance) {
+    graphInstance.destroy();
+    graphInstance = null;
+  }
+  graphInstance = window.cytoscape({
+    container: target,
+    elements,
+    layout: { name: 'cose', animate: false, fit: true, padding: 24 },
+    style: [
+      {
+        selector: 'node',
+        style: {
+          'background-color': '#4a7fb5',
+          'label': 'data(label)',
+          'color': '#e8edf5',
+          'font-size': 10,
+          'font-weight': 700,
+          'text-wrap': 'wrap',
+          'text-max-width': 92,
+          'width': 'label',
+          'height': 'label',
+          'padding': '10px',
+          'shape': 'round-rectangle',
+          'text-valign': 'center',
+          'text-halign': 'center',
+          'border-width': 1,
+          'border-color': '#243049'
+        }
+      },
+      { selector: 'node[type = "case"]', style: { 'background-color': '#c47a3a', 'font-size': 12 } },
+      { selector: 'node[type = "risk"]', style: { 'background-color': '#c45c5c' } },
+      { selector: 'node[type = "intel"]', style: { 'background-color': '#6b7a94' } },
+      { selector: 'node[type = "geo"]', style: { 'background-color': '#3d9a6a' } },
+      { selector: 'node[type = "content"]', style: { 'background-color': '#c4a035' } },
+      { selector: 'node[type = "watchlist"]', style: { 'background-color': '#8b97ad' } },
+      { selector: 'node[type = "ip"]', style: { 'background-color': '#4a7fb5' } },
+      { selector: 'node[type = "domain"]', style: { 'background-color': '#5b90c4' } },
+      { selector: 'node[type = "url"]', style: { 'background-color': '#7a6bb5' } },
+      {
+        selector: 'edge',
+        style: {
+          'width': 1.5,
+          'line-color': '#5a6883',
+          'target-arrow-color': '#5a6883',
+          'target-arrow-shape': 'triangle',
+          'curve-style': 'bezier',
+          'label': 'data(label)',
+          'font-size': 8,
+          'text-rotation': 'autorotate',
+          'text-background-color': '#0b1220',
+          'text-background-opacity': 0.9,
+          'text-background-padding': 2,
+          'color': '#c5cedd'
+        }
+      }
+    ]
+  });
+}
+
+function renderTimeline(targetId, data) {
+  const target = document.getElementById(targetId);
+  if (!target) return;
+  const events = buildTimelineEvents(data);
+  target.innerHTML = events.map((event, index) => {
+    return '<li class="timeline-item"><div class="timeline-step">' + String(index + 1).padStart(2, '0') + '</div><div><p class="timeline-title">' + escapeHtml(event.title) + '</p>' + (event.stamp ? '<p class="timeline-desc">' + escapeHtml(event.stamp) + '</p>' : '') + '<p class="timeline-desc">' + escapeHtml(event.detail) + '</p></div></li>';
+  }).join('');
+}
+
+function renderInvestigationIntelWorkspace(data) {
+  const grid = document.getElementById('investigationIntelGrid');
+  const kv = document.getElementById('investigationIntelKv');
+  const urlsEl = document.getElementById('investigationIntelUrls');
+  if (!grid || !kv || !urlsEl) return;
+  const meta = data.email_metadata || {};
+  const infra = data.infrastructure || {};
+  const ind = data.indicators || {};
+  const geo = infra.geolocation || {};
+  const ipRep = infra.ip_reputation || {};
+  const domainRep = ind.domain_reputation || {};
+  const urlReps = Array.isArray(ind.url_reputations) ? ind.url_reputations : [];
+  const urls = Array.isArray(ind.urls) ? ind.urls : [];
+  grid.innerHTML = [
+    ['Sender domain', meta.sender_domain || '—'],
+    ['URLs', String(urls.length)],
+    ['Public IP', (infra.earliest_public_ip || {}).ip || 'Not found'],
+    ['Geolocation', [geo.country, geo.city].filter(Boolean).join(' / ') || 'Unavailable']
+  ].map((pair) => '<div class="mini-card"><div class="label">' + escapeHtml(pair[0]) + '</div><div class="value">' + escapeHtml(pair[1]) + '</div></div>').join('');
+
+  renderKeyValuePairs('investigationIntelKv', [
+    ['Domain verdict', (domainRep.verdict || 'N/A') + ' ' + mockLabel(domainRep)],
+    ['URL verdicts', urlReps.length ? String(urlReps.filter((item) => item.flagged || (item.engines_flagged || 0) > 0).length) + ' flagged / ' + String(urlReps.length) + ' checked' : 'No URL reputation records'],
+    ['IP verdict', (ipRep.verdict || 'N/A') + ' ' + mockLabel(ipRep)],
+    ['Attribution', (infra.attribution_disclaimer || 'Observed sending infrastructure only.')]
+  ]);
+
+  urlsEl.innerHTML = urlReps.length ? urlReps.map((item) => {
+    return '<div class="mini-card" style="margin-top:10px"><div class="label">URL</div><div class="value">' + escapeHtml(item.url || '—') + '</div><div class="label" style="margin-top:10px">Verdict</div><div class="value">' + escapeHtml(item.verdict || 'N/A') + ' ' + mockLabel(item) + '</div></div>';
+  }).join('') : '<p class="workspace-note" style="margin-top:10px">No URL reputation records in this response.</p>';
+}
+
+function renderThreatIntelWorkspace(data) {
+  const summary = document.getElementById('intelSummaryGrid');
+  const provenance = document.getElementById('intelProvenanceChips');
+  if (!summary || !provenance) return;
+  const meta = data.email_metadata || {};
+  const infra = data.infrastructure || {};
+  const ind = data.indicators || {};
+  const geo = infra.geolocation || {};
+  const ipRep = infra.ip_reputation || {};
+  const domainRep = ind.domain_reputation || {};
+  const urlReps = Array.isArray(ind.url_reputations) ? ind.url_reputations : [];
+  const urls = Array.isArray(ind.urls) ? ind.urls : [];
+  const domainMode = domainRep.mock_mode === true ? 'DEMO DATA' : domainRep.mock_mode === false ? 'LIVE API' : 'N/A';
+  const ipMode = ipRep.mock_mode === true ? 'DEMO DATA' : ipRep.mock_mode === false ? 'LIVE API' : 'N/A';
+  const geoMode = geo.mock_mode === true ? 'DEMO DATA' : geo.mock_mode === false ? 'LIVE API' : 'N/A';
+  const urlMode = urlReps.some((item) => item.mock_mode === false) ? 'LIVE API' : (urlReps.length ? 'DEMO DATA' : 'N/A');
+  summary.innerHTML = [
+    ['Domain', meta.sender_domain || '—', domainRep.verdict || 'N/A', domainMode],
+    ['IP', (infra.earliest_public_ip || {}).ip || 'Not found', ipRep.verdict || 'N/A', ipMode],
+    ['Geolocation', [geo.country, geo.city].filter(Boolean).join(' / ') || 'Unavailable', geo.vpn_or_proxy_suspected ? 'Observed' : 'Observed only', geoMode],
+    ['URLs', String(urls.length), String(urlReps.filter((item) => item.flagged || (item.engines_flagged || 0) > 0).length) + ' flagged', urlMode]
+  ].map((item) => {
+    return '<div class="mini-card"><div class="label">' + escapeHtml(item[0]) + '</div><div class="value">' + escapeHtml(item[1]) + '</div><div class="label" style="margin-top:8px">Status</div><div class="value">' + escapeHtml(item[2]) + ' ' + '<span class="' + (item[3] === 'DEMO DATA' ? 'badge-mock' : item[3] === 'LIVE API' ? 'badge-real' : '') + '">' + escapeHtml(item[3]) + '</span></div></div>';
+  }).join('');
+
+  provenance.innerHTML = [
+    'Domain reputation ' + (domainRep.mock_mode === true ? 'DEMO DATA' : domainRep.mock_mode === false ? 'LIVE API' : 'N/A'),
+    'IP reputation ' + (ipRep.mock_mode === true ? 'DEMO DATA' : ipRep.mock_mode === false ? 'LIVE API' : 'N/A'),
+    'Geolocation ' + (geo.mock_mode === true ? 'DEMO DATA' : geo.mock_mode === false ? 'LIVE API' : 'N/A'),
+    'URL reputation ' + (Array.isArray(ind.url_reputations) && ind.url_reputations.some((item) => item.mock_mode === false) ? 'LIVE API' : Array.isArray(ind.url_reputations) && ind.url_reputations.length ? 'DEMO DATA' : 'N/A')
+  ].map((text) => '<span class="evidence-chip">' + escapeHtml(text) + '</span>').join('');
+}
+
+function renderReportWorkspace(data) {
+  const empty = document.getElementById('reportEmpty');
+  const body = document.getElementById('reportBody');
+  if (!empty || !body) return;
+  if (!data) {
+    empty.style.display = 'block';
+    body.style.display = 'none';
+    return;
+  }
+
+  const risk = data.risk || {};
+  const meta = data.email_metadata || {};
+  const auth = data.authentication || {};
+  const infra = data.infrastructure || {};
+  const ind = data.indicators || {};
+  const content = data.content_analysis || {};
+  const geo = infra.geolocation || {};
+  const ipRep = infra.ip_reputation || {};
+  const domainRep = ind.domain_reputation || {};
+  const urlReps = Array.isArray(ind.url_reputations) ? ind.url_reputations : [];
+  const urls = Array.isArray(ind.urls) ? ind.urls : [];
+  const reasons = Array.isArray(risk.reasons) && risk.reasons.length ? risk.reasons : ['No significant risk indicators detected.'];
+  const relations = buildRelationshipModel(data);
+  const relationSummary = relations.edges.length ? relations.edges.map((edge) => {
+    const source = relations.nodes.find((node) => node.data.id === edge.data.source);
+    const targetNode = relations.nodes.find((node) => node.data.id === edge.data.target);
+    return '<div class="graph-edge-item"><strong>' + escapeHtml(source ? source.data.label : edge.data.source) + '</strong> ' + escapeHtml(edge.data.label || '→') + ' <strong>' + escapeHtml(targetNode ? targetNode.data.label : edge.data.target) + '</strong></div>';
+  }).join('') : '<div class="graph-edge-item">No explicit relationship data in the response.</div>';
+  const timeline = buildTimelineEvents(data);
+
+  empty.style.display = 'none';
+  body.style.display = 'block';
+
+  renderKeyValuePairs('reportSummary', [
+    ['Classification', risk.classification || 'LOW'],
+    ['Risk score', String(risk.total_score != null ? risk.total_score : 0) + ' / ' + String(risk.max_possible != null ? risk.max_possible : 100)],
+    ['Reason count', String(reasons.length)],
+    ['Content hits', String(content.total_hits || 0)]
+  ]);
+
+  document.getElementById('reportCaseId').textContent = data.case_id || '—';
+  document.getElementById('reportClassification').textContent = risk.classification || 'LOW';
+  document.getElementById('reportScore').textContent = String(risk.total_score != null ? risk.total_score : 0) + ' / ' + String(risk.max_possible != null ? risk.max_possible : 100);
+  document.getElementById('reportAnalyzed').textContent = formatWhen(data.analyzed_at);
+  document.getElementById('reportSubject').textContent = meta.subject || '(no subject)';
+  document.getElementById('reportFrom').textContent = meta.from || '—';
+  document.getElementById('reportReplyTo').textContent = meta.reply_to || '(none)';
+
+  document.getElementById('reportEvidenceChips').innerHTML = [
+    meta.sender_domain ? 'Sender domain: ' + meta.sender_domain : null,
+    meta.reply_to_domain ? 'Reply-To domain: ' + meta.reply_to_domain : null,
+    (infra.earliest_public_ip || {}).ip ? 'Earliest IP: ' + (infra.earliest_public_ip || {}).ip : null,
+    urls.length ? 'URLs: ' + String(urls.length) : null,
+    (ind.url_domains || []).length ? 'URL domains: ' + String((ind.url_domains || []).length) : null,
+    reasons.length ? 'Reasons: ' + String(reasons.length) : null
+  ].filter(Boolean).map((text) => '<span class="evidence-chip">' + escapeHtml(text) + '</span>').join('');
+
+  renderKeyValuePairs('reportAuth', [
+    ['SPF', escapeHtml(auth.spf || 'not_found')],
+    ['DKIM', escapeHtml(auth.dkim || 'not_found')],
+    ['DMARC', escapeHtml(auth.dmarc || 'not_found')],
+    ['Header present', auth.raw_header_present ? 'Yes' : 'No']
+  ]);
+
+  renderKeyValuePairs('reportInfra', [
+    ['Public IP', escapeHtml((infra.earliest_public_ip || {}).ip || 'Not found')],
+    ['Geolocation', escapeHtml([geo.country, geo.city].filter(Boolean).join(' / ') || 'Unavailable') + ' ' + mockLabel(geo)],
+    ['ISP', escapeHtml(geo.isp || 'Unknown')],
+    ['ASN', escapeHtml(geo.asn || 'Unknown')],
+    ['IP verdict', escapeHtml(ipRep.verdict || 'N/A') + ' ' + mockLabel(ipRep)],
+    ['Domain verdict', escapeHtml(domainRep.verdict || 'N/A') + ' ' + mockLabel(domainRep)]
+  ]);
+
+  document.getElementById('reportTimeline').innerHTML = timeline.map((event, index) => {
+    return '<li class="timeline-item"><div class="timeline-step">' + String(index + 1).padStart(2, '0') + '</div><div><p class="timeline-title">' + escapeHtml(event.title) + '</p>' + (event.stamp ? '<p class="timeline-desc">' + escapeHtml(event.stamp) + '</p>' : '') + '<p class="timeline-desc">' + escapeHtml(event.detail) + '</p></div></li>';
+  }).join('');
+
+  document.getElementById('reportRelations').innerHTML = '<div class="graph-fallback"><div class="graph-edge-list">' + relationSummary + '</div></div>';
+
+  document.getElementById('reportIndicators').innerHTML = [
+    '<div class="mini-grid">' + [
+      ['Sender domain', meta.sender_domain || '—', domainRep.verdict || 'N/A'],
+      ['Lookalike', (ind.lookalike_domain || {}).is_lookalike ? 'Yes' : 'No', (ind.lookalike_domain || {}).matched_against || ''],
+      ['URLs extracted', String(urls.length), 'From body text only'],
+      ['URL domains', String((ind.url_domains || []).length), 'Derived from URL strings']
+    ].map((item) => '<div class="mini-card"><div class="label">' + escapeHtml(item[0]) + '</div><div class="value">' + escapeHtml(item[1]) + '</div><div class="label" style="margin-top:8px">Detail</div><div class="value">' + escapeHtml(item[2] || '—') + '</div></div>').join('') + '</div>',
+    '<div class="mini-grid" style="margin-top:12px">' + urlReps.map((rep) => '<div class="mini-card"><div class="label">URL</div><div class="value">' + escapeHtml(rep.url || '—') + '</div><div class="label" style="margin-top:8px">Verdict</div><div class="value">' + escapeHtml(rep.verdict || 'N/A') + ' ' + mockLabel(rep) + '</div></div>').join('') + '</div>'
+  ].join('');
+}
+
+function renderAiAnalysis(data) {
+  const verdictEl = document.getElementById('aiVerdict');
+  const narrativeEl = document.getElementById('aiNarrative');
+  const chipsEl = document.getElementById('aiChips');
+  if (!verdictEl || !narrativeEl || !chipsEl || !data) return;
+  const risk = data.risk || {};
+  const meta = data.email_metadata || {};
+  const auth = data.authentication || {};
+  const infra = data.infrastructure || {};
+  const ind = data.indicators || {};
+  const content = data.content_analysis || {};
+  const geo = infra.geolocation || {};
+  const cls = risk.classification || 'LOW';
+  const score = risk.total_score != null ? risk.total_score : 0;
+  const max = risk.max_possible != null ? risk.max_possible : 100;
+  const reasons = Array.isArray(risk.reasons) ? risk.reasons : [];
+  const urls = Array.isArray(ind.urls) ? ind.urls : [];
+  const authFails = ['spf', 'dkim', 'dmarc'].filter((k) => String(auth[k] || '').toLowerCase() === 'fail');
+
+  verdictEl.className = 'ai-verdict ' + cls;
+  verdictEl.textContent = cls + ' \u00b7 ' + score + ' / ' + max;
+
+  const detect = 'DETECT \u2014 The message from <strong>' + escapeHtml(meta.from || 'an unknown sender') + '</strong> scored <strong>' + score + '/' + max + '</strong> and is classified <strong>' + escapeHtml(cls) + '</strong>.';
+  const investigate = 'INVESTIGATE \u2014 ' + (authFails.length
+    ? 'Authentication failed for <strong>' + authFails.join(', ').toUpperCase() + '</strong>, which weakens sender legitimacy.'
+    : 'Authentication results were ' + escapeHtml([auth.spf, auth.dkim, auth.dmarc].map((v) => v || 'not_found').join(' / ')) + '.')
+    + ' The scoring engine recorded <strong>' + reasons.length + '</strong> reason(s) and <strong>' + (content.total_hits || 0) + '</strong> suspicious content hit(s).';
+  const correlate = 'CORRELATE \u2014 ' + (urls.length ? '<strong>' + urls.length + '</strong> URL(s) were extracted from the body' : 'No URLs were extracted from the body')
+    + ((meta.reply_to_domain && meta.reply_to_domain !== meta.sender_domain) ? ', and the Reply-To domain <strong>' + escapeHtml(meta.reply_to_domain) + '</strong> differs from the sender domain <strong>' + escapeHtml(meta.sender_domain || '\u2014') + '</strong>' : '')
+    + '. Sending infrastructure was observed in <strong>' + escapeHtml([geo.city, geo.country].filter(Boolean).join(', ') || 'an undetermined region') + '</strong>; this is infrastructure observation only and does not prove the attacker\u2019s physical location.';
+  const explain = 'EXPLAIN \u2014 ' + (reasons.length ? escapeHtml(String(reasons[0].text || reasons[0].reason || reasons[0])) : 'No significant risk indicators were detected.')
+    + ' Recommended action: ' + (cls === 'CRITICAL' || cls === 'HIGH' ? 'keep quarantined and escalate to the analyst on duty.' : cls === 'SUSPICIOUS' ? 'hold for analyst review before release.' : 'release unless other context suggests otherwise.');
+
+  narrativeEl.innerHTML = [detect, investigate, correlate, explain].map((t) => '<p>' + t + '</p>').join('');
+
+  chipsEl.innerHTML = [
+    'Reasons: ' + reasons.length,
+    'Content hits: ' + (content.total_hits || 0),
+    'URLs: ' + urls.length,
+    'Auth failures: ' + authFails.length
+  ].map((t) => '<span class="evidence-chip">' + escapeHtml(t) + '</span>').join('');
+}
+
+function renderWorkspaceExtras(data) {
+  renderGraph('graphCanvas', data);
+  renderTimeline('timelineList', data);
+  renderInvestigationIntelWorkspace(data);
+  renderThreatIntelWorkspace(data);
+  renderReportWorkspace(data);
+  renderAiAnalysis(data);
+}
+
+function openReportWorkspace() {
+  if (!currentData) {
+    showToast('No active case', 'Analyze an email before opening the report.');
+    return;
+  }
+  renderReportWorkspace(currentData);
+  setView('reports');
+}
+
+function refreshReportWorkspace() {
+  if (!currentData) {
+    showToast('No active case', 'Analyze an email before refreshing the report.');
+    return;
+  }
+  renderReportWorkspace(currentData);
+  showToast('Report refreshed', 'The report uses the current case JSON only.');
+}
+
+async function printReportWorkspace() {
+  if (!currentData) {
+    showToast('No active case', 'Analyze an email before downloading.');
+    return;
+  }
+  renderReportWorkspace(currentData);
+  try {
+    const resp = await fetch(`${API_BASE}/api/reports/${encodeURIComponent(currentData.case_id)}/pdf`);
+    if (!resp.ok) throw new Error((await resp.json().catch(() => ({}))).detail || `Server returned ${resp.status}`);
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ThreatMail_Forensic_Report_${currentData.case_id}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showToast('PDF downloaded', 'The forensic report was generated from the current case data.');
+  } catch (e) {
+    showToast('PDF export failed', e.message + '. Is the backend running on port 8000?');
+  }
+}
+
+function renderResult(data, disposition) {
+  currentData = data;
+  const storedCase = loadCases().find((c) => c.case_id === data.case_id);
+  const currentDisposition = disposition || (storedCase && storedCase.disposition) || "quarantined";
+  updateDispositionUI(currentDisposition);
+  const risk = data.risk || {};
+  const meta = data.email_metadata || {};
+  const cls = risk.classification || "LOW";
+  const max = risk.max_possible || 100;
+  const score = risk.total_score || 0;
+
+  document.getElementById("investigationEmpty").style.display = "none";
+  document.getElementById("investigationBody").style.display = "block";
+  document.getElementById("intelEmpty").style.display = "none";
+  document.getElementById("intelBody").style.display = "block";
+
+  const headerCase = document.getElementById("headerCase");
+  headerCase.classList.add("visible");
+  document.getElementById("headerCaseId").textContent = "Case " + data.case_id;
+  const hcls = document.getElementById("headerCaseCls");
+  hcls.className = "cls " + cls;
+  hcls.textContent = cls;
+
+  const badge = document.getElementById("scoreBadge");
+  badge.textContent = cls;
+  badge.className = "cls-badge " + cls;
+
+  document.getElementById("scoreDen").textContent = "/ " + max;
+  document.getElementById("invCaseId").textContent = data.case_id;
+  document.getElementById("invSubject").textContent = meta.subject || "(no subject)";
+  document.getElementById("invFrom").textContent = meta.from || "—";
+  document.getElementById("invReplyTo").textContent = meta.reply_to || "(none)";
+  document.getElementById("invWhen").textContent = formatWhen(data.analyzed_at);
+
+  const circ = 2 * Math.PI * 64;
+  const arc = document.getElementById("scoreArc");
+  arc.style.stroke = CLASS_COLORS[cls] || CLASS_COLORS.HIGH;
+  arc.style.strokeDasharray = String(circ);
+  arc.style.strokeDashoffset = String(circ * (1 - Math.min(score / max, 1)));
+
+  const scoreEl = document.getElementById("scoreNum");
+  const start = 0;
+  const dur = 420;
+  const t0 = performance.now();
+  function tick(now) {
+    const p = Math.min((now - t0) / dur, 1);
+    scoreEl.textContent = Math.round(start + (score - start) * p);
+    if (p < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+
+  const reasons = risk.reasons && risk.reasons.length ? risk.reasons : ["No significant risk indicators detected."];
+  document.getElementById("reasonList").innerHTML = reasons.map((r) => {
+    const sev = reasonSeverity(r);
+    return '<li><span class="sev ' + sev.cls + '">' + sev.label + "</span><span>" + escapeHtml(r) + "</span></li>";
+  }).join("");
+
+ const auth = data.authentication || {};
+document.getElementById("authRow").innerHTML = ["spf", "dkim", "dmarc"].map((k) => {
+  const v = auth[k] || "not_found";
+
+  let displayValue = v.toUpperCase();
+  let explanation = "";
+
+  if (v.toLowerCase() === "not_found") {
+    displayValue = "NOT FOUND";
+    explanation = '<div class="auth-note">No authentication result present</div>';
+  }
+
+  return '<div class="auth-card ' + authClass(v) + '">' +
+    '<div class="mech">' + k.toUpperCase() + '</div>' +
+    '<div class="val">' + escapeHtml(displayValue) + '</div>' +
+    explanation +
+    '</div>';
+}).join("");
+
+  const bd = risk.breakdown || {};
+  document.getElementById("breakdownBars").innerHTML = Object.keys(BREAKDOWN_LABELS).map((k) => {
+    const val = bd[k] || 0;
+    const cap = BREAKDOWN_CAPS[k] || 25;
+    const pct = Math.min((val / cap) * 100, 100);
+    return '<div class="bar-row"><div class="bar-label">' + BREAKDOWN_LABELS[k] + '</div>' +
+      '<div class="bar-track"><div class="bar-fill" style="width:' + pct + "%;background:" + (BREAKDOWN_COLORS[k] || "#6b7a94") + '"></div></div>' +
+      '<div class="bar-val">' + val + "</div></div>";
+  }).join("");
+
+  const infra = data.infrastructure || {};
+  const geo = infra.geolocation || {};
+  const ipRep = infra.ip_reputation || {};
+  const earliest = infra.earliest_public_ip || {};
+  document.getElementById("attributionNote").textContent = infra.attribution_disclaimer || "";
+  renderInfrastructureWorkspace(data);
+
+  const ind = data.indicators || {};
+  const look = ind.lookalike_domain || {};
+  const urls = ind.urls || [];
+  const urlDomains = ind.url_domains || [];
+  const lookTxt = look.is_lookalike ? ("Yes, resembles " + (look.matched_against || "")) : "No";
+  document.getElementById("iocKv").innerHTML =
+    '<div class="k">Sender Domain</div><div class="v">' + escapeHtml(meta.sender_domain || "—") + " " + mockTag(ind.domain_reputation) + "</div>" +
+    '<div class="k">Domain Verdict</div><div class="v">' + escapeHtml((ind.domain_reputation && ind.domain_reputation.verdict) || "N/A") + " " + mockTag(ind.domain_reputation) + "</div>" +
+    '<div class="k">Lookalike Domain</div><div class="v">' + escapeHtml(lookTxt) + "</div>" +
+    '<div class="k">URL Domains</div><div class="v">' + (urlDomains.length ? urlDomains.map(escapeHtml).join("<br>") : "None") + "</div>" +
+    '<div class="k">Suspicious URLs</div><div class="v">' + (urls.length ? urls.map(escapeHtml).join("<br>") : "None") + "</div>" +
+    '<div class="k">IP Reputation</div><div class="v">' + escapeHtml(ipRep.verdict || (ipRep.abuse_confidence_score != null ? String(ipRep.abuse_confidence_score) : "N/A")) + " " + mockTag(ipRep) + "</div>";
+
+  document.getElementById("previewSubject").textContent = (data.safe_preview && data.safe_preview.subject) || meta.subject || "";
+  document.getElementById("previewBody").textContent = (data.safe_preview && data.safe_preview.body_text) || "";
+  renderProtectedEmail(currentDisposition);
+
+  const urlReps = ind.url_reputations || [];
+  document.getElementById("intelKv").innerHTML =
+    '<div class="k">Sender Domain</div><div class="v">' + escapeHtml(meta.sender_domain || "—") + " " + mockTag(ind.domain_reputation) + "</div>" +
+    '<div class="k">Domain Verdict</div><div class="v">' + escapeHtml((ind.domain_reputation && ind.domain_reputation.verdict) || "N/A") + " " + mockTag(ind.domain_reputation) + "</div>" +
+    '<div class="k">Lookalike</div><div class="v">' + escapeHtml(lookTxt) + "</div>" +
+    '<div class="k">URL Domains</div><div class="v">' + (urlDomains.length ? urlDomains.map(escapeHtml).join("<br>") : "None") + "</div>" +
+    '<div class="k">IP</div><div class="v">' + escapeHtml(earliest.ip || "Not found") + "</div>" +
+    '<div class="k">IP Reputation</div><div class="v">' + escapeHtml(ipRep.verdict || "N/A") + " " + mockTag(ipRep) + "</div>";
+
+  if (!urlReps.length) {
+    document.getElementById("intelUrls").innerHTML = '<p style="color:var(--muted);margin:0">No URL reputation records in this response.</p>';
+  } else {
+    document.getElementById("intelUrls").innerHTML = urlReps.map((u) => {
+      return '<div class="kv" style="margin-bottom:12px">' +
+        '<div class="k">URL</div><div class="v">' + escapeHtml(u.url || "—") + "</div>" +
+        '<div class="k">Verdict</div><div class="v">' + escapeHtml(u.verdict || "N/A") + " " + mockTag(u) + "</div>" +
+        '<div class="k">Engines flagged</div><div class="v">' + escapeHtml(u.engines_flagged ?? "N/A") + "</div></div>";
+    }).join("");
+  }
+
+  renderOverviewLast();
+  renderWorkspaceExtras(data);
+}
+
+function updateDispositionUI(kind) {
+  const pill = document.getElementById("invDisposition");
+  if (!pill) return;
+  pill.className = "disposition-pill " + (kind || "pending");
+  pill.textContent = (kind || "pending").toUpperCase();
+  const q = document.getElementById("btnQuarantine");
+  const r = document.getElementById("btnRelease");
+  if (q) q.textContent = kind === "quarantined" ? "KEEP QUARANTINED ✓" : "KEEP QUARANTINED";
+  if (r) r.textContent = kind === "released" ? "RELEASED ✓" : "RELEASE EMAIL";
+}
+
+function renderProtectedEmail(kind) {
+  const protectedEl = document.getElementById("protectedEmail");
+  const releasedEl = document.getElementById("releasedEmail");
+  if (!protectedEl || !releasedEl) return;
+  const released = kind === "released";
+  protectedEl.style.display = released ? "none" : "block";
+  releasedEl.style.display = released ? "block" : "none";
+}
+
+function confirmDisposition(kind) {
+  if (!currentData) {
+    showToast("No active case", "Analyze an email before changing its disposition.");
+    return;
+  }
+  const modal = document.getElementById("actionModal");
+  const title = document.getElementById("actionModalTitle");
+  const body = document.getElementById("actionModalBody");
+  const note = document.getElementById("actionModalNote");
+  const confirm = document.getElementById("actionModalConfirm");
+  title.textContent = kind === "released" ? "Release this email?" : "Keep this email quarantined?";
+  body.textContent = kind === "released"
+    ? "Releasing the email will make the original message content visible in the email viewer."
+    : "The original email content will remain hidden. The forensic investigation and extracted evidence will remain available.";
+  note.textContent = kind === "released"
+    ? "Only release the message after completing your investigation."
+    : "You can release it later from this investigation.";
+  confirm.textContent = kind === "released" ? "RELEASE & OPEN EMAIL" : "KEEP QUARANTINED";
+  confirm.className = "btn " + (kind === "released" ? "btn-safe" : "btn-danger");
+  modal.classList.add("show");
+  confirm.onclick = () => { modal.classList.remove("show"); setDisposition(kind); };
+}
+
+document.getElementById("actionModalCancel").addEventListener("click", () => document.getElementById("actionModal").classList.remove("show"));
+document.getElementById("actionModal").addEventListener("click", (e) => {
+  if (e.target.id === "actionModal") e.currentTarget.classList.remove("show");
+});
+
+async function setDisposition(kind) {
+  if (!currentData) return;
+  try {
+    const resp = await fetch(`${API_BASE}/api/cases/${encodeURIComponent(currentData.case_id)}/disposition`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ disposition: kind })
+    });
+    if (!resp.ok) throw new Error((await resp.json().catch(() => ({}))).detail || `Server returned ${resp.status}`);
+  } catch (e) {
+    showToast("Action failed", e.message + ". Is the backend running on port 8000?");
+    return;
+  }
+  const cases = loadCases();
+  const idx = cases.findIndex((c) => c.case_id === currentData.case_id);
+  if (idx >= 0) {
+    cases[idx].disposition = kind;
+    saveCases(cases);
+  }
+  updateDispositionUI(kind);
+  renderProtectedEmail(kind);
+  renderInbox();
+  renderFolder();
+  if (kind === "released") {
+    showToast("Email released", "The original email is now visible for inspection.");
+    await loadReleasedEmail();
+  } else {
+    showToast("Email quarantined", "The original email content remains hidden.");
+  }
+}
+
+async function loadReleasedEmail() {
+  if (!currentData) return;
+  try {
+    const resp = await fetch(`${API_BASE}/api/cases/${encodeURIComponent(currentData.case_id)}/content`);
+    if (!resp.ok) throw new Error((await resp.json().catch(() => ({}))).detail || `Server returned ${resp.status}`);
+    const payload = await resp.json();
+    document.getElementById("previewSubject").textContent = payload.subject || "(no subject)";
+    document.getElementById("previewBody").textContent = payload.body || payload.raw || "";
+  } catch (e) {
+    showToast("Email viewer unavailable", e.message);
+  }
+}
+
+const DEMO_CASES = {
+  "TM-DEMO-001": {
+    case_id: "TM-DEMO-001", analyzed_at: "2026-09-23T00:00:00.000Z",
+    email_metadata: { subject: "Scheduled Maintenance Notice", from: "ThreatMail AI Demo <demo@threatmail.ai>", reply_to: "", reply_to_domain: "", sender_domain: "threatmail.ai", message_id: "<demo-001@threatmail.ai>", date: "Wed, 23 Sep 2026 09:00:00 +0530" },
+    risk: { total_score: 0, max_possible: 100, classification: "LOW", breakdown: { authentication: 0, domain: 0, url: 0, ip_reputation: 0, social_engineering: 0, header_anomaly: 0 }, reasons: ["Controlled demo fixture matched: safe_internal_maintenance"] },
+    authentication: { spf: "pass", dkim: "pass", dmarc: "pass", raw_header_present: true },
+    infrastructure: { earliest_public_ip: { ip: "192.0.2.60", note: "Controlled synthetic demo IP" }, geolocation: { mock_mode: true, demo_location: true, synthetic_demo_data: true, ip: "192.0.2.60", country: "India", state: "Maharashtra", city: "Pune", isp: "Synthetic Demo Network", asn: "AS00000 (demo)", vpn_or_proxy_suspected: false }, ip_reputation: { mock_mode: true, verdict: "DEMO DATA" }, attribution_disclaimer: "This is controlled synthetic demonstration data and does not represent the actual sender's location." },
+    indicators: { urls: [], url_domains: [], suspicious_urls: [], url_reputations: [], domain_reputation: { mock_mode: true, verdict: "BENIGN DEMO" }, lookalike_domain: { is_lookalike: false } },
+    content_analysis: { total_hits: 0, matched_phrases: {} }, safe_preview: { subject: "Scheduled Maintenance Notice", body_text: "This is a controlled ThreatMail AI demonstration of a benign internal maintenance notice." }, demo_data: { is_final_demo_email: true, synthetic_ip: "192.0.2.60", synthetic_location: { city: "Pune", state: "Maharashtra", country: "India" }, label: "SYNTHETIC LOCATION / DEMO DATA", disclaimer: "This is controlled synthetic demonstration data and does not represent the actual sender's location." }
+  },
+  "TM-DEMO-002": {
+    case_id: "TM-DEMO-002", analyzed_at: "2026-09-23T00:00:00.000Z",
+    email_metadata: { subject: "Invoice Review Reminder", from: "Billing Demo <billing@threatmail.ai>", reply_to: "billing@threatmail.ai", reply_to_domain: "threatmail.ai", sender_domain: "threatmail.ai", message_id: "<demo-002@threatmail.ai>", date: "Wed, 23 Sep 2026 09:10:00 +0530" },
+    risk: { total_score: 30, max_possible: 100, classification: "SUSPICIOUS", breakdown: { authentication: 0, domain: 5, url: 15, ip_reputation: 0, social_engineering: 10, header_anomaly: 0 }, reasons: ["Controlled suspicious invoice URL", "Urgent invoice review language"] },
+    authentication: { spf: "pass", dkim: "pass", dmarc: "pass", raw_header_present: true },
+    infrastructure: { earliest_public_ip: { ip: "192.0.2.60", note: "Controlled synthetic demo IP" }, geolocation: { mock_mode: true, demo_location: true, synthetic_demo_data: true, ip: "192.0.2.60", country: "India", state: "Maharashtra", city: "Pune", isp: "Synthetic Demo Network", asn: "AS00000 (demo)", vpn_or_proxy_suspected: false }, ip_reputation: { mock_mode: true, verdict: "DEMO DATA" }, attribution_disclaimer: "This is controlled synthetic demonstration data and does not represent the actual sender's location." },
+    indicators: { urls: ["http://login-verify-update.net/invoice"], url_domains: ["login-verify-update.net"], suspicious_urls: ["http://login-verify-update.net/invoice"], url_reputations: [{ url: "http://login-verify-update.net/invoice", verdict: "SUSPICIOUS DEMO", flagged: true, engines_flagged: 1, mock_mode: true }], domain_reputation: { mock_mode: true, verdict: "SUSPICIOUS DEMO", flagged: true }, lookalike_domain: { is_lookalike: false } },
+    content_analysis: { total_hits: 2, matched_phrases: { urgency: ["immediate review", "as soon as possible"] } }, safe_preview: { subject: "Invoice Review Reminder", body_text: "Controlled suspicious invoice-review demonstration." }, demo_data: { is_final_demo_email: true, synthetic_ip: "192.0.2.60", synthetic_location: { city: "Pune", state: "Maharashtra", country: "India" }, label: "SYNTHETIC LOCATION / DEMO DATA", disclaimer: "This is controlled synthetic demonstration data and does not represent the actual sender's location." }
+  },
+  "TM-DEMO-003": {
+    case_id: "TM-DEMO-003", analyzed_at: "2026-09-23T00:00:00.000Z",
+    email_metadata: { subject: "Confidential: urgent gift card purchase", from: "Anushka Kedar <anushkakedar2006@gmail.com>", reply_to: "anushkakedar2006@gmail.com", reply_to_domain: "gmail.com", sender_domain: "gmail.com", message_id: "<demo-003@threatmail.ai>", date: "Wed, 23 Sep 2026 09:20:00 +0530" },
+    risk: { total_score: 62, max_possible: 100, classification: "HIGH", breakdown: { authentication: 20, domain: 0, url: 0, ip_reputation: 0, social_engineering: 32, header_anomaly: 10 }, reasons: ["SPF authentication failed", "DKIM authentication failed", "DMARC authentication failed", "Executive impersonation pattern", "Urgent gift-card request"] },
+    authentication: { spf: "fail", dkim: "fail", dmarc: "fail", raw_header_present: true },
+    infrastructure: { earliest_public_ip: { ip: "192.0.2.60", note: "Controlled synthetic demo IP" }, geolocation: { mock_mode: true, demo_location: true, synthetic_demo_data: true, ip: "192.0.2.60", country: "India", state: "Maharashtra", city: "Pune", isp: "Synthetic Demo Network", asn: "AS00000 (demo)", vpn_or_proxy_suspected: true }, ip_reputation: { mock_mode: true, verdict: "DEMO DATA" }, attribution_disclaimer: "This is controlled synthetic demonstration data and does not represent the actual sender's location." },
+    indicators: { urls: [], url_domains: [], suspicious_urls: [], url_reputations: [], domain_reputation: { mock_mode: true, verdict: "DEMO DATA" }, lookalike_domain: { is_lookalike: false } },
+    content_analysis: { total_hits: 4, matched_phrases: { urgency: ["urgently", "as soon as possible"], financial_request: ["purchase gift cards"] } }, safe_preview: { subject: "Confidential: urgent gift card purchase", body_text: "I am in a meeting and need your help urgently. Purchase gift cards and send the codes to me as soon as possible. Do not call because I am unavailable." }, demo_data: { is_final_demo_email: true, synthetic_ip: "192.0.2.60", synthetic_location: { city: "Pune", state: "Maharashtra", country: "India" }, label: "SYNTHETIC LOCATION / DEMO DATA", disclaimer: "This is controlled synthetic demonstration data and does not represent the actual sender's location." }
+  },
+  "TM-DEMO-004": {
+    case_id: "TM-DEMO-004", analyzed_at: "2026-09-23T00:00:00.000Z",
+    email_metadata: { subject: "Urgent: Verify your account within 24 hours", from: "Security Demo <security@threatmail.ai>", reply_to: "security@threatmail.ai", reply_to_domain: "threatmail.ai", sender_domain: "threatmail.ai", message_id: "<demo-004@threatmail.ai>", date: "Wed, 23 Sep 2026 09:30:00 +0530" },
+    risk: { total_score: 80, max_possible: 100, classification: "CRITICAL", breakdown: { authentication: 20, domain: 15, url: 25, ip_reputation: 0, social_engineering: 10, header_anomaly: 10 }, reasons: ["SPF authentication failed", "DKIM authentication failed", "DMARC authentication failed", "Credential-theft phishing pattern", "Urgent account-verification language"] },
+    authentication: { spf: "fail", dkim: "fail", dmarc: "fail", raw_header_present: true },
+    infrastructure: { earliest_public_ip: { ip: "192.0.2.60", note: "Controlled synthetic demo IP" }, geolocation: { mock_mode: true, demo_location: true, synthetic_demo_data: true, ip: "192.0.2.60", country: "India", state: "Maharashtra", city: "Pune", isp: "Synthetic Demo Network", asn: "AS00000 (demo)", vpn_or_proxy_suspected: true }, ip_reputation: { mock_mode: true, verdict: "DEMO DATA" }, attribution_disclaimer: "This is controlled synthetic demonstration data and does not represent the actual sender's location." },
+    indicators: { urls: ["https://login-verify-update.net/secure/confirm"], url_domains: ["login-verify-update.net"], suspicious_urls: ["https://login-verify-update.net/secure/confirm"], url_reputations: [{ url: "https://login-verify-update.net/secure/confirm", verdict: "PHISHING DEMO", flagged: true, engines_flagged: 1, mock_mode: true }], domain_reputation: { mock_mode: true, verdict: "PHISHING DEMO", flagged: true }, lookalike_domain: { is_lookalike: false } },
+    content_analysis: { total_hits: 5, matched_phrases: { urgency: ["within 24 hours", "immediately"], credential_theft: ["verify your identity"] } }, safe_preview: { subject: "Urgent: Verify your account within 24 hours", body_text: "Controlled credential-theft phishing demonstration. Verify your identity immediately to avoid suspension." }, demo_data: { is_final_demo_email: true, synthetic_ip: "192.0.2.60", synthetic_location: { city: "Pune", state: "Maharashtra", country: "India" }, label: "SYNTHETIC LOCATION / DEMO DATA", disclaimer: "This is controlled synthetic demonstration data and does not represent the actual sender's location." }
+  }
+};
+
+function openDemoCaseFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const caseId = params.get('caseId');
+  const data = caseId ? DEMO_CASES[caseId] : null;
+  if (!data) return false;
+  currentData = data;
+  const disposition = ['HIGH', 'CRITICAL'].includes(data.risk.classification) ? 'quarantined' : 'released';
+  persistDemoCase(data, disposition);
+  renderResult(data, disposition);
+  updateKPIs();
+  renderInbox();
+  renderFolder();
+  setView('investigation');
+  showToast('Demo investigation opened', data.risk.classification + ' · ' + data.risk.total_score + '/100 · ' + data.case_id);
+  return true;
+}
+
+function persistDemoCase(data, disposition) {
+  const cases = loadCases().filter((c) => c.case_id !== data.case_id);
+  cases.unshift({
+    case_id: data.case_id,
+    analyzed_at: data.analyzed_at,
+    classification: data.risk.classification,
+    total_score: data.risk.total_score,
+    subject: data.email_metadata.subject,
+    from: data.email_metadata.from,
+    disposition,
+    data
+  });
+  saveCases(cases.slice(0, MAX_CASES));
+}
+
+function showToast(title, body) {
+  toastEl.innerHTML = "<strong></strong><span></span>";
+  toastEl.querySelector("strong").textContent = title;
+  toastEl.querySelector("span").textContent = body;
+  toastEl.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove("show"), 4200);
+}
+
+async function syncGmailMonitor() {
+  const statusEl = document.getElementById("gmailMonitorStatus");
+  if (!statusEl) return;
+  try {
+    const [statusResp, casesResp] = await Promise.all([
+      fetch(`${API_BASE}/api/gmail/monitor/status`),
+      fetch(`${API_BASE}/api/gmail/monitor/cases`)
+    ]);
+    if (!statusResp.ok || !casesResp.ok) throw new Error("monitor unavailable");
+    const status = await statusResp.json();
+    const payload = await casesResp.json();
+    statusEl.textContent = status.authenticated ? `Gmail Monitor: ACTIVE · ${status.poll_seconds}s` : "Gmail Monitor: AUTH REQUIRED";
+    statusEl.className = "gmail-monitor-status " + (status.authenticated ? "active" : "warn");
+
+    const incoming = payload.cases || [];
+    if (incoming.length) {
+      const local = loadCases();
+      const byId = new Map(local.map(c => [c.case_id, c]));
+      incoming.forEach(c => {
+        byId.set(c.case_id, {
+          case_id: c.case_id,
+          analyzed_at: c.analysis && c.analysis.analyzed_at,
+          classification: c.analysis && c.analysis.risk && c.analysis.risk.classification || "LOW",
+          total_score: c.analysis && c.analysis.risk && c.analysis.risk.total_score,
+          subject: c.analysis && c.analysis.email_metadata && c.analysis.email_metadata.subject,
+          from: c.analysis && c.analysis.email_metadata && c.analysis.email_metadata.from,
+          disposition: c.disposition,
+          gmail_message_id: c.gmail_message_id,
+          data: c.analysis
+        });
+      });
+      saveCases(Array.from(byId.values()).sort((a,b) => new Date(b.analyzed_at || 0) - new Date(a.analyzed_at || 0)).slice(0, MAX_CASES));
+      updateKPIs();
+      renderInbox();
+      renderFolder();
+    }
+  } catch (_) {
+    statusEl.textContent = "Gmail Monitor: OFFLINE";
+    statusEl.className = "gmail-monitor-status warn";
+  }
+}
+
+syncGmailMonitor();
+setInterval(syncGmailMonitor, 10000);
+
+
+function setView(name) {
+  document.querySelectorAll(".view").forEach((v) => v.classList.remove("active"));
+  document.querySelectorAll(".nav-item").forEach((n) => n.classList.toggle("active", n.dataset.view === name));
+  const view = document.getElementById("view-" + name);
+  if (view) {
+    view.classList.add("active");
+    document.getElementById("view-reports")?.classList.toggle("printable-report", name === "reports");
+  }
+}
+
+updateKPIs();
+renderInbox();
+renderFolder();
+openDemoCaseFromUrl();
+</script>
+</body>
+</html>

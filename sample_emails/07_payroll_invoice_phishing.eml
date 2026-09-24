@@ -1,0 +1,17 @@
+From: Microsoft 365 Billing <billing@microsoft-verify-session.com>
+To: analyst@example.com
+Reply-To: invoices@microsoft-verify-session.com
+Subject: Invoice overdue - payment required today
+Message-ID: <demo-invoice-003@microsoft-verify-session.com>
+Date: Sun, 6 Sep 2026 11:35:00 +0000
+Authentication-Results: mx.demo.example; spf=fail smtp.mailfrom=microsoft-verify-session.com; dkim=fail; dmarc=fail
+Received: from billing.microsoft-verify-session.com (unknown [192.0.2.30]) by mx.demo.example with ESMTP id DEMO04; Sun, 6 Sep 2026 11:34:42 +0000
+Content-Type: text/plain; charset="utf-8"
+
+Finance Team,
+
+Your Microsoft 365 invoice is overdue. Payment must be completed today to prevent service interruption.
+
+Review invoice: https://microsoft-verify-session.com/billing/invoice
+
+This is a synthetic phishing test email created for the ThreatMail AI demo.

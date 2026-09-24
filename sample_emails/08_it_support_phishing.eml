@@ -1,0 +1,17 @@
+From: IT Help Desk <support@paypa1-secure.com>
+To: analyst@example.com
+Reply-To: support@login-verify-update.net
+Subject: Security update required - mailbox verification
+Message-ID: <demo-it-005@paypa1-secure.com>
+Date: Sun, 6 Sep 2026 13:55:00 +0000
+Authentication-Results: mx.demo.example; spf=fail smtp.mailfrom=paypa1-secure.com; dkim=fail; dmarc=fail
+Received: from it-help.paypa1-secure.com (unknown [192.0.2.50]) by mx.demo.example with ESMTP id DEMO06; Sun, 6 Sep 2026 13:54:30 +0000
+Content-Type: text/plain; charset="utf-8"
+
+Your mailbox requires a security verification before the end of the day.
+
+Open the verification portal: https://login-verify-update.net/mailbox/verify
+
+Failure to complete the verification may result in temporary mailbox restrictions.
+
+This is a synthetic IT-support phishing test email created for the ThreatMail AI demo.

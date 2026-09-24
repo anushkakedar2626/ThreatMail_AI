@@ -1,0 +1,22 @@
+From: Anushka Kedar <anushkakedar2006@gmail.com>
+To: threatmail.ai.demo@gmail.com
+Subject: Scheduled Maintenance Notice
+Message-ID: <CAJuLC2wBAT0nO==9GHpMrXY5y4Gkt2HRDSR-4YevdXkgO5smkg@mail.gmail.com>
+Date: Tue, 22 Sep 2026 00:20:36 +0530
+Authentication-Results: mx.demo.example; spf=pass; dkim=pass; dmarc=pass
+Received: from mail.gmail.com (unknown [209.85.220.41]) by mx.demo.example with ESMTP id DEMO-SAFE-01; Tue, 22 Sep 2026 00:20:30 +0530
+Content-Type: text/plain; charset="utf-8"
+
+Hello,
+
+This is a notice regarding scheduled internal system maintenance.
+
+The maintenance is planned for the upcoming maintenance window. Some internal services may be temporarily unavailable during this period.
+
+No action is required from employees at this time.
+
+If you have questions, please contact the IT Operations team through the usual internal support channel.
+
+Regards,
+IT Operations
+Company IT Department

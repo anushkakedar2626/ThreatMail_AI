@@ -1,0 +1,15 @@
+From: CEO Office <ceo@microsoft-verify-session.com>
+To: analyst@example.com
+Reply-To: executive-assistant@secure-appleid-confirm.com
+Subject: Confidential: urgent gift card purchase
+Message-ID: <demo-ceo-004@secure-appleid-confirm.com>
+Date: Sun, 6 Sep 2026 12:45:00 +0000
+Authentication-Results: mx.demo.example; spf=fail smtp.mailfrom=microsoft-verify-session.com; dkim=fail; dmarc=fail
+Received: from office-relay.microsoft-verify-session.com (unknown [192.0.2.40]) by mx.demo.example with ESMTP id DEMO05; Sun, 6 Sep 2026 12:44:35 +0000
+Content-Type: text/plain; charset="utf-8"
+
+I am in a meeting and need your help urgently. Purchase gift cards and send the codes to me as soon as possible.
+
+Do not call because I am unavailable.
+
+This is a synthetic executive-impersonation test email created for the ThreatMail AI demo.
