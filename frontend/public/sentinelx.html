@@ -3240,34 +3240,40 @@ function openDemoCaseFromUrl() {
   console.log("ThreatMail deep link:", caseId);
 
   if (!caseId) {
-    console.log("No caseId in URL");
     return false;
   }
 
   const data = DEMO_CASES[caseId];
-
-  console.log("Demo case found:", data);
 
   if (!data) {
     console.error("Demo case not found:", caseId);
     return false;
   }
 
-  currentData = data;
-
   const disposition =
     ["HIGH", "CRITICAL"].includes(data.risk.classification)
       ? "quarantined"
       : "released";
 
-  persistDemoCase(data, disposition);
-  renderResult(data, disposition);
+  currentData = data;
 
+  // Open Investigation FIRST.
+  setView("investigation");
+
+  // Save the demo case.
+  persistDemoCase(data, disposition);
+
+  // Render the case.
+  try {
+    renderResult(data, disposition);
+  } catch (e) {
+    console.error("Demo case rendering error:", e);
+  }
+
+  // Refresh dashboard data.
   updateKPIs();
   renderInbox();
   renderFolder();
-
-  setView("investigation");
 
   showToast(
     "Demo investigation opened",
