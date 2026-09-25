@@ -3333,7 +3333,10 @@ function setView(name) {
 updateKPIs();
 renderInbox();
 renderFolder();
-openDemoCaseFromUrl();
+
+setTimeout(() => {
+  openDemoCaseFromUrl();
+}, 100);
 </script>
 </body>
 </html>
