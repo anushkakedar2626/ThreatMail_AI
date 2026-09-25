@@ -15,7 +15,7 @@
 // CONFIGURATION
 // ============================================================
 
-const THREATMAIL_WEB_URL = 'http://localhost:8080';
+const THREATMAIL_WEB_URL = 'https://threat-mail-ai.vercel.app';
 
 const INVESTIGATION_QUERY_PARAM = 'caseId';
 
