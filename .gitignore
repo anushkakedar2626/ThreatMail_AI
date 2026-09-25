@@ -24,7 +24,7 @@ env/
 .env.*
 !.env.example
 
-# Credentials / tokens
+# Credentials / tokenss
 credentials.json
 client_secret*.json
 service-account*.json
@@ -33,9 +33,6 @@ tokens.json
 *.pem
 *.key
 *.p12
-.env
-.env.*
-!.env.example
 
 # Build / temporary files
 dist/
