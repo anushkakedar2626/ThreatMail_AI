@@ -3347,9 +3347,10 @@ async function syncGmailMonitor() {
   }
 }
 
+openDemoCaseFromUrl();
+
 syncGmailMonitor();
 setInterval(syncGmailMonitor, 10000);
-
 
 function setView(name) {
   document.querySelectorAll(".view").forEach((v) => v.classList.remove("active"));
@@ -3364,7 +3365,7 @@ function setView(name) {
 updateKPIs();
 renderInbox();
 renderFolder();
-openDemoCaseFromUrl();
+
 </script>
 </body>
 </html>
