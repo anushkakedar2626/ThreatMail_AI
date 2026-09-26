@@ -619,3 +619,35 @@ function escapeHtml(text) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
+
+function monitorThreatMailDemo() {
+  const labelName = 'ThreatMail AI';
+  let label = GmailApp.getUserLabelByName(labelName);
+
+  if (!label) {
+    label = GmailApp.createLabel(labelName);
+  }
+
+  const subjects = [
+    'Urgent: Verify your account within 24 hours',
+    'Confidential: urgent gift card purchase'
+  ];
+
+  let result = '';
+
+  subjects.forEach(function(subject) {
+    const threads = GmailApp.search(
+      'in:inbox subject:"' + subject + '"'
+    );
+
+    result += subject + ' → found ' + threads.length + ' thread(s)\n';
+
+    threads.forEach(function(thread) {
+      thread.addLabel(label);
+      thread.moveToArchive();
+      result += '  → LABELLED + ARCHIVED\n';
+    });
+  });
+
+  throw new Error(result);
+}
